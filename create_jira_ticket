@@ -1,0 +1,587 @@
+#!/usr/bin/env ruby
+
+require 'net/http'
+require 'json'
+require 'uri'
+require 'base64'
+
+# Script to create Jira ticket (story or task)
+# Usage: script/create_jira_ticket <story|task> <template_file>
+# Requires JIRA_ACCESS_TOKEN environment variable to be set
+
+class JiraTicketCreator
+  def initialize
+    @access_token = ENV['JIRA_ACCESS_TOKEN']
+    @jira_email = 'abeckwith@zendesk.com'
+    @jira_base_url = 'https://zendesk.atlassian.net'
+
+    if @access_token.nil? || @access_token.empty?
+      puts 'Error: JIRA_ACCESS_TOKEN environment variable is not set'
+      exit 1
+    end
+
+    if @jira_email.nil? || @jira_email.empty?
+      puts 'Error: JIRA_EMAIL environment variable is not set'
+      exit 1
+    end
+  end
+
+  def create_ticket(issue_type, template_file)
+    unless File.exist?(template_file)
+      puts "Error: Template file '#{template_file}' not found"
+      exit 1
+    end
+
+    template_content = File.read(template_file)
+    ticket_data = parse_template(template_content, issue_type)
+
+    uri = URI("#{@jira_base_url}/rest/api/3/issue")
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+
+    request = Net::HTTP::Post.new(uri)
+    credentials = Base64.strict_encode64("#{@jira_email}:#{@access_token}")
+    request['Authorization'] = "Basic #{credentials}"
+    request['Accept'] = 'application/json'
+    request['Content-Type'] = 'application/json'
+    request.body = ticket_data.to_json
+
+    begin
+      response = http.request(request)
+
+      case response.code
+      when '201'
+        ticket_response = JSON.parse(response.body)
+        display_creation_success(ticket_response)
+      when '400'
+        error_response = JSON.parse(response.body)
+        # Check if it's a components permission error and retry without components
+        if error_response['errors'] && error_response['errors']['components']&.include?('permission')
+          puts 'Warning: No permission to set components. Retrying without components...'
+          # Remove components and retry
+          ticket_data[:fields].delete(:components)
+
+          retry_request = Net::HTTP::Post.new(uri)
+          retry_request['Authorization'] = "Basic #{credentials}"
+          retry_request['Accept'] = 'application/json'
+          retry_request['Content-Type'] = 'application/json'
+          retry_request.body = ticket_data.to_json
+
+          retry_response = http.request(retry_request)
+          if retry_response.code == '201'
+            ticket_response = JSON.parse(retry_response.body)
+            display_creation_success(ticket_response)
+            return
+          end
+        end
+
+        puts 'Error: Bad request. Please check your ticket data:'
+        puts JSON.pretty_generate(error_response)
+        exit 1
+      when '401'
+        puts 'Error: Authentication failed. Please check your JIRA_ACCESS_TOKEN'
+        exit 1
+      when '403'
+        puts 'Error: Permission denied. You may not have permission to create tickets in this project'
+        exit 1
+      else
+        puts "Error: HTTP #{response.code} - #{response.message}"
+        puts response.body
+        exit 1
+      end
+    rescue StandardError => e
+      puts "Error creating ticket: #{e.message}"
+      exit 1
+    end
+  end
+
+  private
+
+  def parse_template(content, issue_type)
+    # Parse markdown template and extract ticket information
+    lines = content.split("\n")
+
+    title = ""
+    project_key = "EM" # Default project, can be overridden in template
+    priority = "Medium"
+    labels = []
+    components = []
+    assignee = nil
+
+    # Sections for structured content
+    description_section = []
+    background_section = []
+    solution_section = []
+    references_section = []
+    acceptance_criteria_section = []
+
+    current_section = nil
+    in_metadata = true
+
+    lines.each do |line|
+      original_line = line
+      line = line.strip
+
+      # Extract title from first # header
+      if line.start_with?('# ') && title.empty?
+        title = line[2..-1].strip
+        next
+      end
+
+      # Handle metadata fields (before first ## section)
+      if in_metadata
+        if line.start_with?('**Project:**')
+          value = extract_metadata_value(line)
+          project_key = value unless value.nil? || value.include?('PROJECT_KEY')
+        elsif line.start_with?('**Priority:**')
+          value = extract_metadata_value(line)
+          priority = value unless value.nil? || value.include?('|')
+        elsif line.start_with?('**Labels:**')
+          value = extract_metadata_value(line)
+          if value && !value.include?('label1')
+            labels = value.split(',').map(&:strip)
+          end
+        elsif line.start_with?('**Components:**')
+          value = extract_metadata_value(line)
+          if value && !value.include?('component1')
+            components = value.split(',').map(&:strip)
+          end
+        elsif line.start_with?('**Assignee:**')
+          value = extract_metadata_value(line)
+          if value && !value.include?('user@example.com') && !value.include?('ENV[') && !value.include?('Unassigned')
+            assignee = value
+          else
+            assignee = nil # Default to Unassigned
+          end
+        elsif line.start_with?('## ')
+          in_metadata = false
+          current_section = line[3..-1].strip.downcase
+        end
+      else
+        # Handle content sections
+        if line.start_with?('## ')
+          current_section = line[3..-1].strip.downcase
+        elsif line.start_with?('### ')
+          # Keep subsection headers in the content
+          case current_section
+          when 'description'
+            description_section << original_line
+          when 'references and notes'
+            references_section << original_line
+          when 'acceptance criteria'
+            acceptance_criteria_section << original_line
+          end
+        else
+          # Add content to appropriate section
+          case current_section
+          when 'description'
+            description_section << original_line
+          when 'references and notes'
+            references_section << original_line
+          when 'acceptance criteria'
+            acceptance_criteria_section << original_line
+          end
+        end
+      end
+    end
+
+    # Build full description with all sections
+    full_description = build_full_description(description_section, references_section, acceptance_criteria_section)
+
+    # Convert markdown description to ADF (Atlassian Document Format)
+    description_adf = convert_markdown_to_adf(full_description)
+
+    # Determine issue type ID
+    issue_type_id = case issue_type.downcase
+                    when 'story'
+                      '10001' # Typically Story ID, may need adjustment
+                    when 'task'
+                      '10003' # Typically Task ID, may need adjustment
+                    else
+                      '10003' # Default to Task
+                    end
+
+    # Build the ticket data structure
+    ticket_data = {
+      fields: {
+        project: {
+          key: project_key
+        },
+        summary: title,
+        description: description_adf,
+        issuetype: {
+          name: issue_type.capitalize
+        },
+        priority: {
+          name: priority
+        }
+      }
+    }
+
+    # Add optional fields if provided
+    unless labels.empty?
+      ticket_data[:fields][:labels] = labels
+    end
+
+    # Only add components if not empty and not using placeholder values
+    unless components.empty? || components.join(',').include?('component1')
+      ticket_data[:fields][:components] = components.map { |comp| { name: comp } }
+    end
+
+    if assignee && !assignee.empty?
+      ticket_data[:fields][:assignee] = { emailAddress: assignee }
+    end
+
+    ticket_data
+  end
+
+  def extract_metadata_value(line)
+    return nil unless line.include?(':')
+
+    value = line.split(':', 2)[1].strip
+    return nil if value.empty?
+
+    # Remove markdown formatting
+    value = value.gsub(/^\*\*\s*/, '').gsub(/\s*\*\*$/, '')
+
+    value
+  end
+
+  def build_full_description(description_section, references_section, acceptance_criteria_section)
+    sections = []
+
+    unless description_section.empty?
+      sections << description_section.join("\n")
+    end
+
+    unless references_section.empty?
+      sections << "## References and Notes\n\n" + references_section.join("\n")
+    end
+
+    unless acceptance_criteria_section.empty?
+      sections << "## Acceptance Criteria\n\n" + acceptance_criteria_section.join("\n")
+    end
+
+    sections.join("\n\n")
+  end
+
+  def convert_markdown_to_adf(markdown_text)
+    return { type: "doc", version: 1, content: [] } if markdown_text.strip.empty?
+
+    lines = markdown_text.split("\n")
+    content = []
+    current_paragraph = []
+    current_list = []
+    in_list = false
+
+    lines.each do |line|
+      if line.strip.empty?
+        # Empty line - end current paragraph if it exists, but continue list
+        if !current_paragraph.empty?
+          content << create_paragraph(current_paragraph.join(" "))
+          current_paragraph = []
+        end
+      elsif line.start_with?('## ')
+        # Heading level 2 - end any current content
+        content << create_paragraph(current_paragraph.join(" ")) unless current_paragraph.empty?
+        content << create_bullet_list(current_list) unless current_list.empty?
+        current_paragraph = []
+        current_list = []
+        in_list = false
+        content << create_heading(line[3..-1].strip, 2)
+      elsif line.start_with?('### ')
+        # Heading level 3 - end any current content
+        content << create_paragraph(current_paragraph.join(" ")) unless current_paragraph.empty?
+        content << create_bullet_list(current_list) unless current_list.empty?
+        current_paragraph = []
+        current_list = []
+        in_list = false
+        content << create_heading(line[4..-1].strip, 3)
+      elsif line.strip.start_with?('*   ')
+        # Sub-list item (4 spaces indented)
+        content << create_paragraph(current_paragraph.join(" ")) unless current_paragraph.empty?
+        current_paragraph = []
+
+        list_text = line.strip[4..-1] # Remove '*   '
+        indent_level = (line.length - line.lstrip.length) / 4
+
+        if !in_list
+          in_list = true
+        end
+        current_list << { text: list_text, indent: indent_level + 1 }
+      elsif line.strip.start_with?('* ')
+        # Top-level list item
+        content << create_paragraph(current_paragraph.join(" ")) unless current_paragraph.empty?
+        current_paragraph = []
+
+        list_text = line.strip[2..-1] # Remove '* '
+        indent_level = (line.length - line.lstrip.length) / 4
+
+        if !in_list
+          in_list = true
+        end
+        current_list << { text: list_text, indent: indent_level }
+      else
+        # Regular text - end list if we were in one, add to current paragraph
+        if in_list && !current_list.empty?
+          content << create_bullet_list(current_list)
+          current_list = []
+          in_list = false
+        end
+        current_paragraph << line.strip
+      end
+    end
+
+    # Don't forget the last content
+    content << create_paragraph(current_paragraph.join(" ")) unless current_paragraph.empty?
+    content << create_bullet_list(current_list) unless current_list.empty?
+
+    {
+      type: "doc",
+      version: 1,
+      content: content.reject { |item| item.nil? }
+    }
+  end
+
+  def create_heading(text, level)
+    {
+      type: "heading",
+      attrs: { level: level },
+      content: [
+        {
+          type: "text",
+          text: text
+        }
+      ]
+    }
+  end
+
+  def create_paragraph(text)
+    return nil if text.strip.empty?
+
+    {
+      type: "paragraph",
+      content: parse_inline_formatting(text)
+    }
+  end
+
+  def create_bullet_list(items)
+    return nil if items.empty?
+
+    # If items is an array of hashes with text and indent, handle nested structure
+    if items.first.is_a?(Hash) && items.first.key?(:text)
+      {
+        type: "bulletList",
+        content: build_nested_list_items(items)
+      }
+    else
+      # Fallback for simple items (array of formatted text content)
+      {
+        type: "bulletList",
+        content: items.map do |item|
+          {
+            type: "listItem",
+            content: [
+              {
+                type: "paragraph",
+                content: item
+              }
+            ]
+          }
+        end
+      }
+    end
+  end
+
+  def build_nested_list_items(items)
+    result = []
+    stack = []
+
+    items.each do |item|
+      text = item[:text]
+      indent = item[:indent] || 0
+
+      # Create the list item
+      list_item = {
+        type: "listItem",
+        content: [
+          {
+            type: "paragraph",
+            content: parse_inline_formatting(text)
+          }
+        ]
+      }
+
+      if indent == 0
+        # Top level item
+        result << list_item
+        stack = [list_item]
+      else
+        # Nested item - find parent at indent-1 level
+        while stack.length > indent
+          stack.pop
+        end
+
+        if stack.length == indent
+          # Add to parent's content as a nested list
+          parent = stack.last
+          if parent[:content].last[:type] != "bulletList"
+            parent[:content] << {
+              type: "bulletList",
+              content: []
+            }
+          end
+          parent[:content].last[:content] << list_item
+          stack << list_item
+        else
+          # Fallback: add to top level
+          result << list_item
+          stack = [list_item]
+        end
+      end
+    end
+
+    result
+  end
+
+  def parse_inline_formatting(text)
+    # Simple parsing for bold, italic, and links
+    # This is a basic implementation - could be enhanced further
+
+    content = []
+    remaining_text = text.strip
+
+    while !remaining_text.empty?
+      # Check for markdown links [text](url)
+      if match = remaining_text.match(/\[([^\]]+)\]\(([^)]+)\)/)
+        # Add text before the link
+        if match.begin(0) > 0
+          content << { type: "text", text: remaining_text[0...match.begin(0)] }
+        end
+
+        # Add the link
+        content << {
+          type: "text",
+          text: match[1],
+          marks: [
+            {
+              type: "link",
+              attrs: { href: match[2] }
+            }
+          ]
+        }
+
+        remaining_text = remaining_text[match.end(0)..-1]
+      # Check for bold text **text**
+      elsif match = remaining_text.match(/\*\*([^*]+)\*\*/)
+        # Add text before the bold
+        if match.begin(0) > 0
+          content << { type: "text", text: remaining_text[0...match.begin(0)] }
+        end
+
+        # Add the bold text
+        content << {
+          type: "text",
+          text: match[1],
+          marks: [{ type: "strong" }]
+        }
+
+        remaining_text = remaining_text[match.end(0)..-1]
+      # Check for italic text *text*
+      elsif match = remaining_text.match(/\*([^*]+)\*/)
+        # Add text before the italic
+        if match.begin(0) > 0
+          content << { type: "text", text: remaining_text[0...match.begin(0)] }
+        end
+
+        # Add the italic text
+        content << {
+          type: "text",
+          text: match[1],
+          marks: [{ type: "em" }]
+        }
+
+        remaining_text = remaining_text[match.end(0)..-1]
+      else
+        # No special formatting found, add the rest as plain text
+        content << { type: "text", text: remaining_text }
+        break
+      end
+    end
+
+    content
+  end
+
+  def display_creation_success(ticket_response)
+    puts '=' * 80
+    puts "JIRA TICKET CREATED SUCCESSFULLY!"
+    puts '=' * 80
+
+    puts "\nTicket Key: #{ticket_response['key']}"
+    puts "Ticket ID: #{ticket_response['id']}"
+    puts "URL: #{@jira_base_url}/browse/#{ticket_response['key']}"
+
+    puts "\n" + ('=' * 80)
+    puts "Ticket created successfully. You can view it at the URL above."
+    puts '=' * 80
+  end
+end
+
+# Main execution
+if ARGV.length < 2
+  puts "Usage: #{$0} <story|task> <template_file>"
+  puts "Example: #{$0} story ticket_template.md"
+  puts ''
+  puts 'Arguments:'
+  puts '  story|task     - Type of ticket to create'
+  puts '  template_file  - Markdown file containing ticket details'
+  puts ''
+  puts 'Environment variables required:'
+  puts '  JIRA_ACCESS_TOKEN - Your Jira API token'
+  puts '  JIRA_EMAIL - Your Jira email address'
+  puts '  JIRA_BASE_URL - Jira instance URL (optional, defaults to https://zendesk.atlassian.net)'
+  puts ''
+  puts 'Template file format:'
+  puts '  # Ticket Title'
+  puts ''
+  puts '  **Project:** PROJECT_KEY'
+  puts '  **Priority:** High|Medium|Low'
+  puts '  **Labels:** label1, label2'
+  puts '  **Components:** component1, component2'
+  puts '  **Assignee:** user@example.com (or leave as ENV default)'
+  puts ''
+  puts '  ## Description'
+  puts ''
+  puts '  ### Background'
+  puts '  *(Context and problem explanation)*'
+  puts ''
+  puts '  ### Proposed Solution'
+  puts '  *(Technical approach overview)*'
+  puts ''
+  puts '  ## References and Notes'
+  puts ''
+  puts '  *   *Code Context:*'
+  puts '      *   *[path/to/file.rb#L1-L10](github-permalink-url)*'
+  puts '  *   *Related Tickets/Docs:*'
+  puts '      *   *Link to related resources*'
+  puts '  *   *Testing Considerations:*'
+  puts '      *   *Specific testing requirements*'
+  puts ''
+  puts '  ## Acceptance Criteria'
+  puts ''
+  puts '  *   *Clear, testable conditions*'
+  puts '  *   *Feature flag [flag_name] controls behavior*'
+  exit 1
+end
+
+issue_type = ARGV[0]
+template_file = ARGV[1]
+
+unless ['story', 'task'].include?(issue_type.downcase)
+  puts "Error: Issue type must be 'story' or 'task'"
+  exit 1
+end
+
+creator = JiraTicketCreator.new
+creator.create_ticket(issue_type, template_file)
