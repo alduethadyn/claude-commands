@@ -4,7 +4,7 @@ module Jira
   # Common module for parsing JIRA ticket markdown templates
   # Used by both TicketCreator and TicketUpdater for consistent parsing
   module MarkdownTemplateParser
-    
+
     # Parse a markdown template and extract all ticket information
     # Returns a hash with metadata and structured content
     def self.parse_template(content, issue_type = nil)
@@ -110,7 +110,7 @@ module Jira
         components: components,
         assignee: assignee,
         parent_issue: parent_issue,
-        
+
         # Content sections
         description_section: description_section,
         references_section: references_section,
