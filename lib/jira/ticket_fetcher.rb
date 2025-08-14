@@ -129,7 +129,7 @@ module Jira
 
     def extract_assignee(assignee_data)
       return nil unless assignee_data
-      
+
       {
         account_id: assignee_data['accountId'],
         display_name: assignee_data['displayName'],

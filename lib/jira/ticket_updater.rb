@@ -47,7 +47,7 @@ module Jira
         unless File.exist?(options[:description_file])
           raise ArgumentError, "Description file '#{options[:description_file]}' not found"
         end
-        
+
         markdown_content = File.read(options[:description_file])
         # Use the common parser to build the description
         full_description = Jira::MarkdownTemplateParser.parse_for_description(markdown_content)
@@ -115,10 +115,10 @@ module Jira
       # Get the board ID for the project using hardcoded mapping
       board_info = get_board_info_for_project('EM')
       return nil unless board_info
-      
+
       board_id = board_info[:id]
       board_type = board_info[:type]
-      
+
       # Kanban boards don't support sprints
       if board_type == 'kanban'
         puts "Warning: Project uses Kanban board which doesn't support sprints"
@@ -162,17 +162,17 @@ module Jira
     def get_my_account_id
       # Hardcode my account ID for performance, or fetch it dynamically
       return '557058:07381840-3d1a-4550-9471-c35b6b77ab9d' if @jira_email == 'abeckwith@zendesk.com'
-      
+
       # Fallback to API call
       uri = URI("#{@jira_base_url}/rest/api/3/myself")
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
-      
+
       request = Net::HTTP::Get.new(uri)
       credentials = Base64.strict_encode64("#{@jira_email}:#{@access_token}")
       request['Authorization'] = "Basic #{credentials}"
       request['Accept'] = 'application/json'
-      
+
       begin
         response = http.request(request)
         if response.code == '200'
@@ -201,11 +201,11 @@ module Jira
         'EM' => { id: 3170, name: 'Email Processing', type: 'scrum' }
         # Add more project mappings as needed
       }
-      
+
       if board_mappings.key?(project_key)
         return board_mappings[project_key]
       end
-      
+
       # Fallback to API discovery if not in hardcoded mappings
       return get_board_for_project_with_type(project_key)
     end

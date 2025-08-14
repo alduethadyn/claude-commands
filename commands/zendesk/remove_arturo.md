@@ -136,7 +136,7 @@ new_implementation()
 
 ### For Fully Disabled Flags (0%):
 ```ruby
-# Before  
+# Before
 if account.arturo_feature_enabled?(:experimental_feature)
   experimental_code()
 end
@@ -161,7 +161,7 @@ end
 ## Success Criteria
 
 ✅ Feature flag validated and found in codebase
-✅ User confirmed rollout status and removal plan  
+✅ User confirmed rollout status and removal plan
 ✅ JIRA ticket created with comprehensive details
 ✅ Development branch created and ready
 ✅ All flag references identified and categorized

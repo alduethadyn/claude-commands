@@ -13,7 +13,7 @@ module Jira
       # Preprocess markdown for better conversion
       processed_markdown = preprocess_markdown(markdown_text)
       lines = processed_markdown.split("\n")
-      
+
       content = []
       current_paragraph_lines = []
       current_list_items = []
@@ -31,23 +31,22 @@ module Jira
           current_paragraph_lines = []
           current_list_items = []
           in_list = false
-          
+
           level = $1.length
           text = $2.strip
           content << create_heading(text, level)
-          
+
         elsif line.match(/^(\s*)\*\s+(.+)$/)
           # List item - finalize paragraph, add to list
           finalize_paragraph(content, current_paragraph_lines) unless current_paragraph_lines.empty?
           current_paragraph_lines = []
-          
+
           indent_spaces = $1.length
           indent_level = indent_spaces / 2
           list_text = $2.strip
-          
+
           current_list_items << { text: list_text, indent: indent_level }
           in_list = true
-          
         else
           # Regular text line
           if in_list && !current_list_items.empty?
@@ -56,7 +55,7 @@ module Jira
             current_list_items = []
             in_list = false
           end
-          
+
           current_paragraph_lines << line.strip unless line.strip.empty?
         end
       end
@@ -86,12 +85,12 @@ module Jira
 
     # Setup instructions (simplified for local conversion)
     def self.setup_instructions
-      <<~INSTRUCTIONS
+      <<-INSTRUCTIONS
         Jira::MarkdownFormatter uses local conversion to ADF format.
-        
-        No API credentials required - conversion is handled locally with 
+
+        No API credentials required - conversion is handled locally with
         high-quality markdown parsing optimized for JIRA's ADF structure.
-        
+
         Supported markdown features:
         - Headers (# ## ### #### ##### ######)
         - Bold text (**bold**)
@@ -99,7 +98,7 @@ module Jira
         - Inline code (`code`)
         - Links ([text](url))
         - Bullet lists with nesting (*, indented with 2 spaces per level)
-        
+
         Usage:
         Jira::MarkdownFormatter.convert_markdown_to_adf(markdown_text)
       INSTRUCTIONS
@@ -110,35 +109,35 @@ module Jira
     # Preprocess markdown for optimal conversion
     def self.preprocess_markdown(markdown_text)
       processed = markdown_text.dup
-      
+
       # Normalize headers - ensure space after #
       processed = processed.gsub(/^(\#{1,6})([^#\s])/, '\1 \2')
-      
+
       # Ensure proper spacing around headers
       processed = processed.gsub(/([^\n])\n(\#{1,6}\s)/, "\\1\n\n\\2")
       processed = processed.gsub(/(\#{1,6}\s.+)\n([^\n#])/, "\\1\n\n\\2")
-      
+
       # Normalize list formatting
       processed = processed.gsub(/^(\s*)\*([^\s])/, '\1* \2')
-      
+
       # Clean up excessive line breaks
       processed = processed.gsub(/\n{3,}/, "\n\n")
-      
+
       processed.strip
     end
 
     def self.finalize_paragraph(content, paragraph_lines)
       return if paragraph_lines.empty?
-      
+
       paragraph_text = paragraph_lines.join(' ').strip
       return if paragraph_text.empty?
-      
+
       content << create_paragraph(paragraph_text)
     end
 
     def self.finalize_list(content, list_items)
       return if list_items.empty?
-      
+
       content << create_nested_bullet_list(list_items)
     end
 
@@ -167,11 +166,11 @@ module Jira
     def self.build_nested_list_structure(items)
       result = []
       stack = []
-      
+
       items.each do |item|
         text = item[:text]
         indent = item[:indent] || 0
-        
+
         list_item = {
           type: "listItem",
           content: [
@@ -181,7 +180,7 @@ module Jira
             }
           ]
         }
-        
+
         if indent == 0
           # Top level
           result << list_item
@@ -191,13 +190,13 @@ module Jira
           while stack.length > 0 && stack.last[:level] >= indent
             stack.pop
           end
-          
+
           if stack.length > 0
             parent = stack.last[:item]
-            
+
             # Find or create nested list in parent
             nested_list = parent[:content].find { |c| c[:type] == "bulletList" }
-            
+
             unless nested_list
               nested_list = {
                 type: "bulletList",
@@ -205,7 +204,7 @@ module Jira
               }
               parent[:content] << nested_list
             end
-            
+
             nested_list[:content] << list_item
             stack << { item: list_item, level: indent }
           else
@@ -215,14 +214,14 @@ module Jira
           end
         end
       end
-      
+
       result
     end
 
     def self.parse_inline_text(text)
       content = []
       remaining = text.strip
-      
+
       while !remaining.empty?
         # Handle code spans first `code`
         if match = remaining.match(/`([^`]+)`/)
@@ -230,27 +229,27 @@ module Jira
           if match.begin(0) > 0
             content.concat(parse_text_formatting(remaining[0...match.begin(0)]))
           end
-          
+
           # Add code span
           content << {
             type: "text",
             text: match[1],
             marks: [{ type: "code" }]
           }
-          
+
           remaining = remaining[match.end(0)..-1]
-          
+
         # Handle links [text](url)
         elsif match = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/)
           # Add preceding text
           if match.begin(0) > 0
             content.concat(parse_text_formatting(remaining[0...match.begin(0)]))
           end
-          
+
           # Add link
           link_text = match[1]
           link_url = match[2]
-          
+
           content << {
             type: "text",
             text: link_text,
@@ -261,23 +260,23 @@ module Jira
               }
             ]
           }
-          
+
           remaining = remaining[match.end(0)..-1]
-          
+
         else
           # Handle remaining text with formatting
           content.concat(parse_text_formatting(remaining))
           break
         end
       end
-      
+
       content.empty? ? [{ type: "text", text: text }] : content
     end
 
     def self.parse_text_formatting(text)
       content = []
       remaining = text
-      
+
       while !remaining.empty?
         # Bold text **text**
         if match = remaining.match(/\*\*([^*]+)\*\*/)
@@ -285,39 +284,39 @@ module Jira
           if match.begin(0) > 0
             content << { type: "text", text: remaining[0...match.begin(0)] }
           end
-          
+
           # Add bold text
           content << {
-            type: "text", 
+            type: "text",
             text: match[1],
             marks: [{ type: "strong" }]
           }
-          
+
           remaining = remaining[match.end(0)..-1]
-          
+
         # Italic text *text* (not part of **)
         elsif match = remaining.match(/(?<!\*)\*([^*]+)\*(?!\*)/)
           # Add preceding text
           if match.begin(0) > 0
             content << { type: "text", text: remaining[0...match.begin(0)] }
           end
-          
+
           # Add italic text
           content << {
             type: "text",
-            text: match[1], 
+            text: match[1],
             marks: [{ type: "em" }]
           }
-          
+
           remaining = remaining[match.end(0)..-1]
-          
+
         else
           # No more formatting, add remaining text
           content << { type: "text", text: remaining } unless remaining.empty?
           break
         end
       end
-      
+
       content
     end
   end
