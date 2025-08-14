@@ -5,6 +5,7 @@ require 'json'
 require 'uri'
 require 'base64'
 require_relative 'markdown_formatter'
+require_relative 'markdown_template_parser'
 
 module Jira
   # Class to update JIRA ticket status, assignee, and other fields
@@ -48,7 +49,9 @@ module Jira
         end
         
         markdown_content = File.read(options[:description_file])
-        description_adf = Jira::MarkdownFormatter.convert_with_fallback(markdown_content)
+        # Use the common parser to build the description
+        full_description = Jira::MarkdownTemplateParser.parse_for_description(markdown_content)
+        description_adf = Jira::MarkdownFormatter.convert_with_fallback(full_description)
         update_fields[:description] = description_adf
       end
 
@@ -106,6 +109,7 @@ module Jira
     end
 
     private
+
 
     def get_current_active_sprint
       # Get the board ID for the project using hardcoded mapping
