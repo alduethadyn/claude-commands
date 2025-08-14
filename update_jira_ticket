@@ -4,6 +4,7 @@ require 'net/http'
 require 'json'
 require 'uri'
 require 'base64'
+require_relative 'jira_markdown_formatter'
 
 # Script to update Jira ticket status, assignee, and other fields
 # Usage: script/update_jira_ticket TICKET-123 [options]
@@ -41,6 +42,18 @@ class JiraTicketUpdater
         account_id = get_account_id_by_email(options[:assignee])
         update_fields[:assignee] = { accountId: account_id } if account_id
       end
+    end
+
+    # Handle description update from markdown file
+    if options[:description_file]
+      unless File.exist?(options[:description_file])
+        puts "Error: Description file '#{options[:description_file]}' not found"
+        exit 1
+      end
+      
+      markdown_content = File.read(options[:description_file])
+      description_adf = JiraMarkdownFormatter.convert_markdown_to_adf(markdown_content)
+      update_fields[:description] = description_adf
     end
 
     # Handle sprint assignment
@@ -386,6 +399,7 @@ if ARGV.empty?
   puts "       #{$0} TICKET-KEY --assignee user@example.com"
   puts "       #{$0} TICKET-KEY --status 'Ready for Review'"
   puts "       #{$0} TICKET-KEY --sprint current|SPRINT_ID"
+  puts "       #{$0} TICKET-KEY --description markdown_file.md"
   puts ""
   puts "Examples:"
   puts "  #{$0} EM-1234 --ready-for-review"
@@ -394,6 +408,7 @@ if ARGV.empty?
   puts "  #{$0} EM-1234 --assignee me --status 'In Progress'"
   puts "  #{$0} EM-1234 --assignee me --status 'In Progress' --sprint current"
   puts "  #{$0} EM-1234 --sprint 123"
+  puts "  #{$0} EM-1234 --description updated_description.md"
   puts ""
   puts "Environment variables required:"
   puts "  JIRA_ACCESS_TOKEN - Your Jira API token"
@@ -428,6 +443,12 @@ else
   if (sprint_index = ARGV.index('--sprint'))
     sprint_value = ARGV[sprint_index + 1]
     options[:sprint] = sprint_value if sprint_value
+  end
+
+  # Parse description file
+  if (description_index = ARGV.index('--description'))
+    description_file = ARGV[description_index + 1]
+    options[:description_file] = description_file if description_file
   end
 
   if options.empty?
