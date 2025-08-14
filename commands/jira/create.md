@@ -26,28 +26,26 @@ You are helping create a new JIRA ticket. Follow this workflow:
      - Any relevant components or labels
 
 3. **Analyze Template Structure**
-   - Read the JIRA template from `~/.claude/jira_template.md`
+   - Read the JIRA template from `~/.claude/jira_template_v3.md`
    - Understand the required sections and metadata fields
 
 4. **Generate Ticket Content**
    - Create a meaningful ticket title based on the user's description
-   - Fill in the metadata fields:
+   - Fill in the Project Information section:
      - Project: Use "EM" as default (can be adjusted)
      - Priority: Based on user input or default to "Medium"
-     - Labels: Prompt for labels once per session.
+     - Labels: Prompt for labels once per session
      - Assignee: Use ENV['JIRA_EMAIL'] default
    - Generate Description section:
-     - Background: Explain the context and problem
-     - Proposed Solution: High-level technical approach
-   - Create References and Notes section with placeholders for:
-     - Code Context (to be filled during implementation)
-     - Related Tickets/Docs
-     - Testing Considerations
-     - Rollout/Deployment notes
+     - Context: Explain the problem and why work is needed
+     - Technical approach: High-level overview of the solution
+   - Create References and Notes section:
+     - Code Context: Placeholders for file references with GitHub permalinks
+     - Testing Considerations: Specific requirements and test scenarios
    - Generate Acceptance Criteria:
-     - Create specific, testable conditions
+     - Create specific, testable conditions with code/link examples
      - Include feature flag considerations
-     - Add test coverage expectations
+     - Add validation and error handling requirements
 
 5. **Create Ticket File**
    - Generate a filename based on ticket type and summary

@@ -4,7 +4,7 @@ require 'net/http'
 require 'json'
 require 'uri'
 require 'base64'
-require_relative 'jira_markdown_formatter'
+require_relative 'jira_markdown_formatter_v3'
 
 # Script to update Jira ticket status, assignee, and other fields
 # Usage: script/update_jira_ticket TICKET-123 [options]
@@ -52,7 +52,7 @@ class JiraTicketUpdater
       end
       
       markdown_content = File.read(options[:description_file])
-      description_adf = JiraMarkdownFormatter.convert_markdown_to_adf(markdown_content)
+      description_adf = JiraMarkdownFormatterV3.convert_with_fallback(markdown_content)
       update_fields[:description] = description_adf
     end
 
@@ -408,7 +408,7 @@ if ARGV.empty?
   puts "  #{$0} EM-1234 --assignee me --status 'In Progress'"
   puts "  #{$0} EM-1234 --assignee me --status 'In Progress' --sprint current"
   puts "  #{$0} EM-1234 --sprint 123"
-  puts "  #{$0} EM-1234 --description updated_description.md"
+  puts "  #{$0} EM-1234 --description ticket_description.md"
   puts ""
   puts "Environment variables required:"
   puts "  JIRA_ACCESS_TOKEN - Your Jira API token"

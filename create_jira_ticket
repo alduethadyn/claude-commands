@@ -4,7 +4,7 @@ require 'net/http'
 require 'json'
 require 'uri'
 require 'base64'
-require_relative 'jira_markdown_formatter'
+require_relative 'jira_markdown_formatter_v3'
 
 # Script to create Jira ticket (story or task)
 # Usage: script/create_jira_ticket <story|task> <template_file>
@@ -13,7 +13,7 @@ require_relative 'jira_markdown_formatter'
 class JiraTicketCreator
   def initialize
     @access_token = ENV['JIRA_ACCESS_TOKEN']
-    @jira_email = 'abeckwith@zendesk.com'
+    @jira_email = ENV['JIRA_EMAIL'] || 'abeckwith@zendesk.com'
     @jira_base_url = 'https://zendesk.atlassian.net'
 
     if @access_token.nil? || @access_token.empty?
@@ -196,8 +196,8 @@ class JiraTicketCreator
     # Build full description with all sections
     full_description = build_full_description(description_section, references_section, acceptance_criteria_section)
 
-    # Convert markdown description to ADF (Atlassian Document Format)
-    description_adf = JiraMarkdownFormatter.convert_markdown_to_adf(full_description)
+    # Convert markdown description to ADF (Atlassian Document Format) using V3 formatter
+    description_adf = JiraMarkdownFormatterV3.convert_with_fallback(full_description)
 
     # Determine issue type ID
     issue_type_id = case issue_type.downcase
@@ -297,7 +297,7 @@ end
 # Main execution
 if ARGV.length < 2
   puts "Usage: #{$0} <story|task> <template_file>"
-  puts "Example: #{$0} story ticket_template.md"
+  puts "Example: #{$0} story ticket_description.md"
   puts ''
   puts 'Arguments:'
   puts '  story|task     - Type of ticket to create'
@@ -308,36 +308,28 @@ if ARGV.length < 2
   puts '  JIRA_EMAIL - Your Jira email address'
   puts '  JIRA_BASE_URL - Jira instance URL (optional, defaults to https://zendesk.atlassian.net)'
   puts ''
-  puts 'Template file format:'
-  puts '  # Ticket Title'
   puts ''
-  puts '  **Project:** PROJECT_KEY'
+  puts 'Template file format (see jira_template_v3.md for reference):'
+  puts '  ## Ticket Title'
+  puts ''
+  puts '  ### Project Information'
+  puts '  **Project:** EM'
   puts '  **Priority:** High|Medium|Low'
   puts '  **Labels:** label1, label2'
-  puts '  **Components:** component1, component2'
-  puts '  **Assignee:** user@example.com (or leave as ENV default)'
+  puts '  **Assignee:** user@example.com'
   puts ''
   puts '  ## Description'
-  puts ''
-  puts '  ### Background'
-  puts '  *(Context and problem explanation)*'
-  puts ''
-  puts '  ### Proposed Solution'
-  puts '  *(Technical approach overview)*'
+  puts '  *(Context and technical approach)*'
   puts ''
   puts '  ## References and Notes'
+  puts '  ### Code Context'
+  puts '  * [file.rb#L1-L10](github-url) - Description'
   puts ''
-  puts '  *   *Code Context:*'
-  puts '      *   *[path/to/file.rb#L1-L10](github-permalink-url)*'
-  puts '  *   *Related Tickets/Docs:*'
-  puts '      *   *Link to related resources*'
-  puts '  *   *Testing Considerations:*'
-  puts '      *   *Specific testing requirements*'
+  puts '  ### Testing Considerations'
+  puts '  * Specific testing requirements'
   puts ''
   puts '  ## Acceptance Criteria'
-  puts ''
-  puts '  *   *Clear, testable conditions*'
-  puts '  *   *Feature flag [flag_name] controls behavior*'
+  puts '  * Clear, testable conditions'
   exit 1
 end
 
