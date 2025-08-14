@@ -30,22 +30,10 @@ You are helping remove a fully rolled out or disabled Arturo feature flag. This 
 ### Phase 2: JIRA Ticket Creation
 
 3. **Generate Ticket Content**
+   - Understand the required sections and metadata fields
    - Create ticket title: "Remove fully rolled out Arturo feature flag: {flag_name}"
    - Use "task" type for the ticket
-   - Follow jira_template_v2.md format with proper nested bullets:
-     - **Background**: Explain that the feature flag has been fully rolled out/disabled and can be safely removed
-     - **Proposed Solution**: Remove flag references and cleanup related code
-     - **References and Notes** section with proper nested bullets:
-       - *Code Context:* List file locations where flag is referenced
-       - *Related Tickets/Docs:* Any related documentation
-       - *Testing Considerations:* Note test updates needed
-       - *Rollout/Deployment:* Explain this removes the Arturo flag
-     - **Acceptance Criteria** with proper nested bullets:
-       - All references to `{flag_name}` are removed from the codebase
-       - Default behavior is maintained (for rolled out flags) or removed (for disabled flags)
-       - Related test updates are made
-       - Arturo feature flag is removed from admin interface
-       - Code cleanup of any flag-related conditional logic
+   - Carefully follow jira_ticket_v3.md format with proper nested bullets and formatting.
 
 4. **Create JIRA Ticket**
    - Write populated template to temporary file (the assignee should default to me unless otherwise specified)
@@ -103,10 +91,10 @@ You are helping remove a fully rolled out or disabled Arturo feature flag. This 
 9. **Create Pull Request**
    - Commit all changes with message: `{TICKET-ID} Remove fully rolled out Arturo feature flag: {flag_name}`
    - Push branch to remote
-   - Use GitHub PR template (using the project's .github/PULL_REQUEST_TEMPLATE.md if present) with:
+   - Read, analyze and use GitHub PR template (using the project's .github/PULL_REQUEST_TEMPLATE.md if present) with:
      - Title: `[{TICKET-ID}] Remove fully rolled out Arturo feature flag: {flag_name}`
      - Description explaining the removal and verification steps
-     - Reference to JIRA ticket
+     - Reference to JIRA ticket created earlier
      - List of areas affected and testing performed
    - Create PR: `gh pr create --title "[TICKET-ID] Remove fully rolled out Arturo feature flag: {flag_name}" --body "$(cat pr_template)"`
    - Mark ticket ready for review: `~/.claude/update_jira_ticket {TICKET-ID} --status Review`
@@ -173,6 +161,6 @@ end
 
 ---
 
-**Usage**: `/zendesk_remove_arturo flag_name`
+**Usage**: `/zendesk:remove_arturo flag_name`
 
 Remove the fully rolled out or disabled Arturo feature flag `$ARGUMENTS` by creating a JIRA ticket and opening a pull request with the removal implementation.
