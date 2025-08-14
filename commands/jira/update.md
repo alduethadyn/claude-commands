@@ -76,6 +76,8 @@ You are helping update an existing JIRA ticket. Follow this workflow:
 - Update technical approach or implementation details
 - Add references to related work or documentation
 
+**Writing Style for Updates**: Use clear, simple, direct language. Avoid flowery language or imagined-importance words. Be terse and factual when adding or modifying content.
+
 ### Assignment Updates
 - Assign to yourself: `--assignee me`
 - Assign to specific person: `--assignee user@example.com`

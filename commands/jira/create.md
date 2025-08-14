@@ -30,7 +30,7 @@ You are helping create a new JIRA ticket. Follow this workflow:
    - Understand the required sections and metadata fields
 
 4. **Generate Ticket Content**
-   - Create a meaningful ticket title based on the user's description
+   - Create ticket title based on the user's description
    - Fill in the Project Information section:
      - Project: Use "EM" as default (can be adjusted)
      - Priority: Based on user input or default to "Medium"
@@ -66,19 +66,22 @@ You are helping create a new JIRA ticket. Follow this workflow:
 
 ## Content Generation Guidelines
 
-- **Title**: Should be concise but descriptive, following the pattern:
+- **Title**: Should be concise and descriptive, following the pattern:
   - Story: "As a [user type], I want [functionality] so that [benefit]" or simplified "[Feature/Enhancement] description"
   - Task: "[Technical task] description" focusing on the technical work
 
-- **Background**: Explain why this work is needed, what problem it solves, or what improvement it provides
+- **Writing Style**: Use clear, simple, direct language. Avoid flowery language or imagined-importance words like "significantly," "instrumental," "meaningful," "robust," "seamlessly," etc. Be terse and factual.
 
-- **Proposed Solution**: High-level approach without deep implementation details
+- **Background**: Explain why this work is needed, what problem it solves, or what improvement it provides. Keep it brief and focused.
+
+- **Proposed Solution**: High-level approach without deep implementation details. State what will be done, not how impressive it will be.
 
 - **Acceptance Criteria**:
   - Use clear, measurable conditions
   - Include feature flag considerations (assume Arturo feature flags)
   - Focus on observable outcomes and behaviors
   - Include test coverage as a standard expectation
+  - Write criteria as simple statements, not elaborate descriptions
 
 ## Prompt Templates
 
@@ -92,14 +95,14 @@ You are helping create a new JIRA ticket. Follow this workflow:
 - "What priority should this be? (High/Medium/Low)"
 - "Are there specific components or areas of the codebase this relates to?"
 - "Are there any related tickets or documentation I should reference?"
-- "What would successful completion look like from a user perspective?"
+- "How will you know when this is complete?"
 
 ## Success Criteria
 
 ✅ Issue type validated (story or task)
 ✅ User requirements gathered through guided prompts
 ✅ Template analyzed and understood
-✅ Meaningful ticket content generated
+✅ Ticket content generated
 ✅ Markdown file created with populated template
 ✅ JIRA ticket created successfully (if user confirms)
 ✅ Next steps provided to user
