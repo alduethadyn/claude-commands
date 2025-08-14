@@ -108,6 +108,7 @@ class JiraTicketCreator
     labels = []
     components = []
     assignee = nil
+    parent_issue = nil
 
     # Sections for structured content
     description_section = []
@@ -153,6 +154,11 @@ class JiraTicketCreator
             assignee = value
           else
             assignee = nil # Default to Unassigned
+          end
+        elsif line.start_with?('**Parent:**')
+          value = extract_metadata_value(line)
+          if value && !value.empty? && !value.include?('PARENT-KEY')
+            parent_issue = value
           end
         elsif line.start_with?('## ')
           in_metadata = false
@@ -233,6 +239,11 @@ class JiraTicketCreator
       ticket_data[:fields][:assignee] = { emailAddress: assignee }
     end
 
+    # Add parent issue if specified
+    if parent_issue && !parent_issue.empty?
+      ticket_data[:fields][:parent] = { key: parent_issue }
+    end
+
     ticket_data
   end
 
@@ -298,25 +309,17 @@ class JiraTicketCreator
         current_list = []
         in_list = false
         content << create_heading(line[4..-1].strip, 3)
-      elsif line.strip.start_with?('*   ')
-        # Sub-list item (4 spaces indented)
+      elsif line.match(/^\s*\*\s+/)
+        # List item (any level)
         content << create_paragraph(current_paragraph.join(" ")) unless current_paragraph.empty?
         current_paragraph = []
 
-        list_text = line.strip[4..-1] # Remove '*   '
-        indent_level = (line.length - line.lstrip.length) / 4
-
-        if !in_list
-          in_list = true
-        end
-        current_list << { text: list_text, indent: indent_level + 1 }
-      elsif line.strip.start_with?('* ')
-        # Top-level list item
-        content << create_paragraph(current_paragraph.join(" ")) unless current_paragraph.empty?
-        current_paragraph = []
-
-        list_text = line.strip[2..-1] # Remove '* '
-        indent_level = (line.length - line.lstrip.length) / 4
+        # Calculate indent level based on leading spaces before *
+        leading_spaces = line.match(/^(\s*)/)[1].length
+        indent_level = leading_spaces / 2 # 2 spaces per indent level
+        
+        # Extract list text after * and any whitespace
+        list_text = line.sub(/^\s*\*\s*/, '').strip
 
         if !in_list
           in_list = true
@@ -402,7 +405,7 @@ class JiraTicketCreator
       text = item[:text]
       indent = item[:indent] || 0
 
-      # Create the list item
+      # Create the list item with proper inline formatting
       list_item = {
         type: "listItem",
         content: [
@@ -416,28 +419,35 @@ class JiraTicketCreator
       if indent == 0
         # Top level item
         result << list_item
-        stack = [list_item]
+        stack = [{ item: list_item, level: 0 }]
       else
-        # Nested item - find parent at indent-1 level
-        while stack.length > indent
+        # Find the appropriate parent for this indent level
+        while stack.length > 0 && stack.last[:level] >= indent
           stack.pop
         end
 
-        if stack.length == indent
-          # Add to parent's content as a nested list
-          parent = stack.last
-          if parent[:content].last[:type] != "bulletList"
-            parent[:content] << {
+        if stack.length > 0
+          parent = stack.last[:item]
+          
+          # Check if parent already has a nested bulletList
+          nested_list = parent[:content].find { |content| content[:type] == "bulletList" }
+          
+          if nested_list.nil?
+            # Create new nested bulletList
+            nested_list = {
               type: "bulletList",
               content: []
             }
+            parent[:content] << nested_list
           end
-          parent[:content].last[:content] << list_item
-          stack << list_item
+          
+          # Add item to nested list
+          nested_list[:content] << list_item
+          stack << { item: list_item, level: indent }
         else
-          # Fallback: add to top level
+          # Fallback: add to top level if no parent found
           result << list_item
-          stack = [list_item]
+          stack = [{ item: list_item, level: indent }]
         end
       end
     end
@@ -446,18 +456,31 @@ class JiraTicketCreator
   end
 
   def parse_inline_formatting(text)
-    # Simple parsing for bold, italic, and links
-    # This is a basic implementation - could be enhanced further
-
+    # Enhanced parsing for bold, italic, code, and links
     content = []
     remaining_text = text.strip
 
     while !remaining_text.empty?
+      # Check for code blocks `code`
+      if match = remaining_text.match(/`([^`]+)`/)
+        # Add text before the code
+        if match.begin(0) > 0
+          content.concat(parse_basic_formatting(remaining_text[0...match.begin(0)]))
+        end
+
+        # Add the code text
+        content << {
+          type: "text",
+          text: match[1],
+          marks: [{ type: "code" }]
+        }
+
+        remaining_text = remaining_text[match.end(0)..-1]
       # Check for markdown links [text](url)
-      if match = remaining_text.match(/\[([^\]]+)\]\(([^)]+)\)/)
+      elsif match = remaining_text.match(/\[([^\]]+)\]\(([^)]+)\)/)
         # Add text before the link
         if match.begin(0) > 0
-          content << { type: "text", text: remaining_text[0...match.begin(0)] }
+          content.concat(parse_basic_formatting(remaining_text[0...match.begin(0)]))
         end
 
         # Add the link
@@ -473,8 +496,24 @@ class JiraTicketCreator
         }
 
         remaining_text = remaining_text[match.end(0)..-1]
+      else
+        # Parse remaining text for bold/italic
+        content.concat(parse_basic_formatting(remaining_text))
+        break
+      end
+    end
+
+    content
+  end
+
+  def parse_basic_formatting(text)
+    # Parse bold and italic formatting
+    content = []
+    remaining_text = text
+
+    while !remaining_text.empty?
       # Check for bold text **text**
-      elsif match = remaining_text.match(/\*\*([^*]+)\*\*/)
+      if match = remaining_text.match(/\*\*([^*]+)\*\*/)
         # Add text before the bold
         if match.begin(0) > 0
           content << { type: "text", text: remaining_text[0...match.begin(0)] }
@@ -488,8 +527,8 @@ class JiraTicketCreator
         }
 
         remaining_text = remaining_text[match.end(0)..-1]
-      # Check for italic text *text*
-      elsif match = remaining_text.match(/\*([^*]+)\*/)
+      # Check for italic text *text* (but not **)
+      elsif match = remaining_text.match(/(?<!\*)\*([^*]+)\*(?!\*)/)
         # Add text before the italic
         if match.begin(0) > 0
           content << { type: "text", text: remaining_text[0...match.begin(0)] }

@@ -34,8 +34,7 @@ You are helping create a new JIRA ticket. Follow this workflow:
    - Fill in the metadata fields:
      - Project: Use "EM" as default (can be adjusted)
      - Priority: Based on user input or default to "Medium"
-     - Labels: Generate relevant labels based on description
-     - Components: Suggest components if applicable
+     - Labels: Prompt for labels once per session.
      - Assignee: Use ENV['JIRA_EMAIL'] default
    - Generate Description section:
      - Background: Explain the context and problem

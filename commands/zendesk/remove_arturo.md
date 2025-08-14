@@ -48,14 +48,20 @@ You are helping remove a fully rolled out or disabled Arturo feature flag. This 
        - Code cleanup of any flag-related conditional logic
 
 4. **Create JIRA Ticket**
-   - Write populated template to temporary file (leave assignee as Unassigned)
+   - Write populated template to temporary file (the assignee should default to me unless otherwise specified)
    - Execute `~/.claude/create_jira_ticket task temp_file.md`
    - Capture ticket ID for implementation phase
+   - Mark ticket as To Do and move into current sprint: `~/.claude/update_jira_ticket {TICKET-ID} --status "To Do" --sprint current`
 
 ### Phase 3: Implementation Setup
 
 5. **Set Up Development Environment**
    - Check current git branch and handle uncommitted changes
+   - Ensure the main or master branch up-to-date
+   - Check status of local tooling stack:
+     - Check that the current ruby version `rbenv local` matches the `.ruby-version`, if not run `brew upgrade ruby-build` and then `rbenv install [version from .ruby-version]`
+     - Ensure the bundle is up-to-date by running `bundle` (if a new ruby was installed, run `gem install mysql2 -v '0.5.6' -- --with-mysql-config=$(brew --prefix mysql)/bin/mysql_config --with-ldflags="-L$(brew --prefix zstd)/lib -L$(brew --prefix openssl)/lib" --with-cppflags=-I$(brew --prefix openssl)/include` first)
+     - If a new ruby was installed, run `gem install solargraph`
    - Create new branch: `{TICKET-ID}/remove-{flag_name}-flag`
    - Set up todo list for implementation tasks:
      - Analyze all flag references found in codebase
@@ -73,7 +79,7 @@ You are helping remove a fully rolled out or disabled Arturo feature flag. This 
      - Configuration or migration files
      - Documentation references
    - Create detailed implementation plan based on findings
-   - Assign ticket to self, mark In Progress, and add to current sprint: `~/.claude/update_jira_ticket {TICKET-ID} --assignee me --status "In Progress" --sprint current`
+   - Mark ticket In Progress: `~/.claude/update_jira_ticket {TICKET-ID} --status "In Progress"`
 
 ### Phase 4: Implementation
 
@@ -97,7 +103,7 @@ You are helping remove a fully rolled out or disabled Arturo feature flag. This 
 9. **Create Pull Request**
    - Commit all changes with message: `{TICKET-ID} Remove fully rolled out Arturo feature flag: {flag_name}`
    - Push branch to remote
-   - Use GitHub PR template with:
+   - Use GitHub PR template (using the project's .github/PULL_REQUEST_TEMPLATE.md if present) with:
      - Title: `[{TICKET-ID}] Remove fully rolled out Arturo feature flag: {flag_name}`
      - Description explaining the removal and verification steps
      - Reference to JIRA ticket

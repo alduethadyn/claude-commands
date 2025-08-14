@@ -3,7 +3,7 @@
 **Project:** PROJECT_KEY
 **Priority:** High|Medium|Low
 **Labels:** label1, label2
-**Components:** component1, component2
+**Parent:** PROJECT_KEY-ISSUE_NUMBER
 **Assignee:** user@example.com (default to ENV['JIRA_EMAIL'])
 
 ## Description
