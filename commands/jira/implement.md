@@ -13,7 +13,7 @@ You are helping implement a JIRA ticket. Follow this workflow:
 ## Workflow Steps
 
 1. **Fetch Ticket Details**
-   - Use the `~/.claude/fetch_jira_ticket $ARGUMENTS` command to get ticket information
+   - Use the `~/.claude/bin/fetch_jira_ticket $ARGUMENTS` command to get ticket information
    - Parse the ticket title, status, type, and description
    - Create a todo list to track the implementation steps
 

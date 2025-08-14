@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+
+# Add lib directory to load path
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+
+require_relative '../lib/jira/ticket_creator'
+
+# Script to create Jira ticket (story or task)
+# Usage: bin/create_jira_ticket <story|task> <template_file>
+# Requires JIRA_ACCESS_TOKEN environment variable to be set
+
+def display_usage
+  puts "Usage: #{$0} <story|task> <template_file>"
+  puts "Example: #{$0} story ticket_description.md"
+  puts ''
+  puts 'Arguments:'
+  puts '  story|task     - Type of ticket to create'
+  puts '  template_file  - Markdown file containing ticket details'
+  puts ''
+  puts 'Environment variables required:'
+  puts '  JIRA_ACCESS_TOKEN - Your Jira API token'
+  puts '  JIRA_EMAIL - Your Jira email address'
+  puts '  JIRA_BASE_URL - Jira instance URL (optional, defaults to https://zendesk.atlassian.net)'
+  puts ''
+  puts 'Template file format (see templates/jira_ticket_v3.md for reference):'
+  puts '  ## Ticket Title'
+  puts ''
+  puts '  ### Project Information'
+  puts '  **Project:** EM'
+  puts '  **Priority:** High|Medium|Low'
+  puts '  **Labels:** label1, label2'
+  puts '  **Assignee:** user@example.com'
+  puts ''
+  puts '  ## Description'
+  puts '  *(Context and technical approach)*'
+  puts ''
+  puts '  ## References and Notes'
+  puts '  ### Code Context'
+  puts '  * [file.rb#L1-L10](github-url) - Description'
+  puts ''
+  puts '  ### Testing Considerations'
+  puts '  * Specific testing requirements'
+  puts ''
+  puts '  ## Acceptance Criteria'
+  puts '  * Clear, testable conditions'
+end
+
+def display_creation_success(result)
+  puts '=' * 80
+  puts "JIRA TICKET CREATED SUCCESSFULLY!"
+  puts '=' * 80
+
+  puts "\nTicket Key: #{result[:ticket_key]}"
+  puts "Ticket ID: #{result[:ticket_id]}"
+  puts "URL: #{result[:url]}"
+
+  puts "\n" + ('=' * 80)
+  puts "Ticket created successfully. You can view it at the URL above."
+  puts '=' * 80
+end
+
+# Main execution
+if ARGV.length < 2
+  display_usage
+  exit 1
+end
+
+issue_type = ARGV[0]
+template_file = ARGV[1]
+
+unless ['story', 'task'].include?(issue_type.downcase)
+  puts "Error: Issue type must be 'story' or 'task'"
+  exit 1
+end
+
+begin
+  creator = Jira::TicketCreator.new
+  result = creator.create_ticket(issue_type, template_file)
+  display_creation_success(result)
+rescue ArgumentError => e
+  puts "Error: #{e.message}"
+  exit 1
+rescue StandardError => e
+  puts "Error creating ticket: #{e.message}"
+  exit 1
+end

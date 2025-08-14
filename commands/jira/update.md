@@ -18,7 +18,7 @@ You are helping update an existing JIRA ticket. Follow this workflow:
 
 2. **Fetch Current Ticket Information**
    - Use the fetch_jira_ticket script to get current ticket details:
-     - `~/.claude/fetch_jira_ticket $ARGUMENTS`
+     - `~/.claude/bin/fetch_jira_ticket $ARGUMENTS`
    - Display the current ticket summary and description for context
 
 3. **Gather Update Requirements**
@@ -39,9 +39,9 @@ You are helping update an existing JIRA ticket. Follow this workflow:
 
 5. **Execute Update**
    - For status/assignee/field changes, use the update_jira_ticket script:
-     - `~/.claude/update_jira_ticket $ARGUMENTS --status "New Status"`
-     - `~/.claude/update_jira_ticket $ARGUMENTS --assignee user@example.com`
-     - `~/.claude/update_jira_ticket $ARGUMENTS --ready-for-review`
+     - `~/.claude/bin/update_jira_ticket $ARGUMENTS --status "New Status"`
+     - `~/.claude/bin/update_jira_ticket $ARGUMENTS --assignee user@example.com`
+     - `~/.claude/bin/update_jira_ticket $ARGUMENTS --ready-for-review`
    - For description updates, fetch current content, modify it, and update via API
    - For comment additions, add a comment with the update information
 

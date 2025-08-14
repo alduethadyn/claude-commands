@@ -1,0 +1,95 @@
+#!/usr/bin/env ruby
+
+# Add lib directory to load path
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+
+require_relative '../lib/jira/ticket_updater'
+
+# Script to update Jira ticket status, assignee, and other fields
+# Usage: bin/update_jira_ticket TICKET-123 [options]
+# Requires JIRA_ACCESS_TOKEN environment variable to be set
+
+def display_usage
+  puts "Usage: #{$0} TICKET-KEY [options]"
+  puts "       #{$0} TICKET-KEY --ready-for-review [assignee]"
+  puts "       #{$0} TICKET-KEY --assignee user@example.com"
+  puts "       #{$0} TICKET-KEY --status 'Ready for Review'"
+  puts "       #{$0} TICKET-KEY --sprint current|SPRINT_ID"
+  puts "       #{$0} TICKET-KEY --description ticket_description.md"
+  puts ""
+  puts "Examples:"
+  puts "  #{$0} EM-1234 --ready-for-review"
+  puts "  #{$0} EM-1234 --ready-for-review me"
+  puts "  #{$0} EM-1234 --ready-for-review john@example.com"
+  puts "  #{$0} EM-1234 --assignee me --status 'In Progress'"
+  puts "  #{$0} EM-1234 --assignee me --status 'In Progress' --sprint current"
+  puts "  #{$0} EM-1234 --sprint 123"
+  puts "  #{$0} EM-1234 --description ticket_description.md"
+  puts ""
+  puts "Environment variables required:"
+  puts "  JIRA_ACCESS_TOKEN - Your Jira API token"
+  puts "  JIRA_EMAIL - Your Jira email address"
+end
+
+# Main execution
+if ARGV.empty?
+  display_usage
+  exit 1
+end
+
+ticket_key = ARGV[0]
+
+begin
+  updater = Jira::TicketUpdater.new
+
+  # Parse command line arguments
+  if ARGV.include?('--ready-for-review')
+    assignee_index = ARGV.index('--ready-for-review') + 1
+    assignee = (assignee_index < ARGV.length) ? ARGV[assignee_index] : nil
+    result = updater.mark_ready_for_review(ticket_key, assignee)
+  else
+    options = {}
+
+    # Parse assignee
+    if (assignee_index = ARGV.index('--assignee'))
+      assignee_value = ARGV[assignee_index + 1]
+      options[:assignee] = assignee_value if assignee_value
+    end
+
+    # Parse status
+    if (status_index = ARGV.index('--status'))
+      status_value = ARGV[status_index + 1]
+      options[:status] = status_value if status_value
+    end
+
+    # Parse sprint
+    if (sprint_index = ARGV.index('--sprint'))
+      sprint_value = ARGV[sprint_index + 1]
+      options[:sprint] = sprint_value if sprint_value
+    end
+
+    # Parse description file
+    if (description_index = ARGV.index('--description'))
+      description_file = ARGV[description_index + 1]
+      options[:description_file] = description_file if description_file
+    end
+
+    if options.empty?
+      puts "No update options specified. Use --help for usage information."
+      exit 1
+    end
+
+    result = updater.update_ticket(ticket_key, options)
+  end
+
+  # Display success
+  puts result[:message]
+  puts "View at: #{result[:url]}"
+
+rescue ArgumentError => e
+  puts "Error: #{e.message}"
+  exit 1
+rescue StandardError => e
+  puts "Error updating ticket: #{e.message}"
+  exit 1
+end

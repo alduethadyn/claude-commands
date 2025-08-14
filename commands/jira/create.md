@@ -26,7 +26,7 @@ You are helping create a new JIRA ticket. Follow this workflow:
      - Any relevant components or labels
 
 3. **Analyze Template Structure**
-   - Read the JIRA template from `~/.claude/jira_template_v3.md`
+   - Read the JIRA template from `~/.claude/templates/jira_ticket_v3.md`
    - Understand the required sections and metadata fields
 
 4. **Generate Ticket Content**
@@ -57,7 +57,7 @@ You are helping create a new JIRA ticket. Follow this workflow:
    - Prompt user to review the generated content
    - Ask for confirmation to create the JIRA ticket
    - If confirmed, execute the create_jira_ticket script:
-     - `~/.claude/create_jira_ticket $ARGUMENTS generated_file.md`
+     - `~/.claude/bin/create_jira_ticket $ARGUMENTS generated_file.md`
    - Display the results and ticket URL
 
 7. **Cleanup and Next Steps**
