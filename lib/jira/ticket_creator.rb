@@ -6,6 +6,7 @@ require 'uri'
 require 'base64'
 require_relative 'markdown_formatter'
 require_relative 'markdown_template_parser'
+require_relative 'adf_validator'
 
 module Jira
   # Class to create JIRA tickets (story or task) from markdown templates
@@ -100,6 +101,14 @@ module Jira
 
       # Convert markdown description to ADF (Atlassian Document Format)
       description_adf = Jira::MarkdownFormatter.convert_with_fallback(full_description)
+      
+      # Validate ADF before creating ticket
+      validation_result = Jira::ADFValidator.validate_with_details(description_adf)
+      unless validation_result[:valid]
+        puts "Warning: Generated ADF may have validation issues:"
+        validation_result[:errors].each { |error| puts "  - #{error}" }
+        puts "Proceeding with ticket creation anyway..."
+      end
 
       # Build the ticket data structure
       ticket_data = {

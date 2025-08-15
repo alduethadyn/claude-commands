@@ -9,9 +9,7 @@
 
 ## Description
 
-*(Provide a concise explanation of the problem or the context (extremely concise). Why is this work needed? What user problem does it solve, or what technical debt does it address? Keep it brief and focused.)*
-
-*(Give a high-level overview of the technical approach or the intended change. Avoid excessive jargon, but provide enough detail for an engineer to understand the direction. Focus on the "what" and "why" more than the deep "how".)*
+*(Provide a concise explanation of the problem or the context (extremely concise). Then give a high-level overview of the technical approach or the intended change. Avoid excessive jargon, but provide enough detail for an engineer to understand the direction. Focus on the "what" and "why" more than the deep "how".)*
 
 ## References and Notes
 

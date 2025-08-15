@@ -6,6 +6,7 @@ require 'uri'
 require 'base64'
 require_relative 'markdown_formatter'
 require_relative 'markdown_template_parser'
+require_relative 'adf_validator'
 
 module Jira
   # Class to update JIRA ticket status, assignee, and other fields
@@ -52,6 +53,15 @@ module Jira
         # Use the common parser to build the description
         full_description = Jira::MarkdownTemplateParser.parse_for_description(markdown_content)
         description_adf = Jira::MarkdownFormatter.convert_with_fallback(full_description)
+        
+        # Validate ADF before updating
+        validation_result = Jira::ADFValidator.validate_with_details(description_adf)
+        unless validation_result[:valid]
+          puts "Warning: Generated ADF may have validation issues:"
+          validation_result[:errors].each { |error| puts "  - #{error}" }
+          puts "Proceeding with update anyway..."
+        end
+        
         update_fields[:description] = description_adf
       end
 

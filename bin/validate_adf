@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+# Add lib directory to load path
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+
+require_relative '../lib/jira/adf_validator'
+
+# Pass through all arguments to the validator
+exec("ruby", File.expand_path('../lib/jira/adf_validator.rb', __dir__), *ARGV)
