@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-# Test runner CLI for Claude JIRA integration  
-exec("bundle", "exec", "ruby", File.expand_path('../test/run_tests.rb', __dir__))
+# Test runner CLI for Claude JIRA integration
+exec('bundle', 'exec', 'ruby', File.expand_path('../test/run_tests.rb', __dir__))

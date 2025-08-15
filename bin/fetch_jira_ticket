@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # Add lib directory to load path
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
@@ -10,17 +11,17 @@ require_relative '../lib/jira/ticket_fetcher'
 # Requires JIRA_ACCESS_TOKEN environment variable to be set
 
 def display_usage
-  puts "Usage: #{$0} TICKET-KEY"
-  puts "Example: #{$0} EM-1234"
-  puts ""
-  puts "Environment variables required:"
-  puts "  JIRA_ACCESS_TOKEN - Your Jira API token"
-  puts "  JIRA_EMAIL - Your Jira email address"
+  puts "Usage: #{$PROGRAM_NAME} TICKET-KEY"
+  puts "Example: #{$PROGRAM_NAME} EM-1234"
+  puts ''
+  puts 'Environment variables required:'
+  puts '  JIRA_ACCESS_TOKEN - Your Jira API token'
+  puts '  JIRA_EMAIL - Your Jira email address'
 end
 
 def display_ticket_info(ticket_info)
   puts '=' * 80
-  puts "JIRA TICKET INFORMATION"
+  puts 'JIRA TICKET INFORMATION'
   puts '=' * 80
 
   puts "\nTicket Key: #{ticket_info[:key]}"
@@ -34,7 +35,7 @@ def display_ticket_info(ticket_info)
   if ticket_info[:assignee]
     puts "Assignee: #{ticket_info[:assignee][:display_name]} (#{ticket_info[:assignee][:email]})"
   else
-    puts "Assignee: Unassigned"
+    puts 'Assignee: Unassigned'
   end
 
   if ticket_info[:reporter]
@@ -44,22 +45,18 @@ def display_ticket_info(ticket_info)
   puts "Created: #{ticket_info[:created]}"
   puts "Updated: #{ticket_info[:updated]}"
 
-  if ticket_info[:labels] && !ticket_info[:labels].empty?
-    puts "Labels: #{ticket_info[:labels].join(', ')}"
-  end
+  puts "Labels: #{ticket_info[:labels].join(', ')}" if ticket_info[:labels] && !ticket_info[:labels].empty?
 
   if ticket_info[:components] && !ticket_info[:components].empty?
     puts "Components: #{ticket_info[:components].join(', ')}"
   end
 
-  if ticket_info[:parent]
-    puts "Parent: #{ticket_info[:parent][:key]} - #{ticket_info[:parent][:summary]}"
-  end
+  puts "Parent: #{ticket_info[:parent][:key]} - #{ticket_info[:parent][:summary]}" if ticket_info[:parent]
 
   puts "\nDescription:"
   puts ticket_info[:description]
 
-  puts "\n" + '=' * 80
+  puts "\n#{'=' * 80}"
 end
 
 # Main execution

@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require 'net/http'
 require 'json'
@@ -20,15 +21,13 @@ module Jira
         raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set'
       end
 
-      if @jira_email.nil? || @jira_email.empty?
-        raise ArgumentError, 'JIRA_EMAIL environment variable is not set'
-      end
+      return unless @jira_email.nil? || @jira_email.empty?
+
+      raise ArgumentError, 'JIRA_EMAIL environment variable is not set'
     end
 
     def create_ticket(issue_type, template_file)
-      unless File.exist?(template_file)
-        raise ArgumentError, "Template file '#{template_file}' not found"
-      end
+      raise ArgumentError, "Template file '#{template_file}' not found" unless File.exist?(template_file)
 
       template_content = File.read(template_file)
       ticket_data = build_ticket_data_from_template(template_content, issue_type)
@@ -51,7 +50,7 @@ module Jira
         case response.code
         when '201'
           ticket_response = JSON.parse(response.body)
-          return success_response(ticket_response)
+          success_response(ticket_response)
         when '400'
           error_response = JSON.parse(response.body)
           # Check if it's a components permission error and retry without components
@@ -101,13 +100,13 @@ module Jira
 
       # Convert markdown description to ADF (Atlassian Document Format)
       description_adf = Jira::MarkdownFormatter.convert_with_fallback(full_description)
-      
+
       # Validate ADF before creating ticket
       validation_result = Jira::ADFValidator.validate_with_details(description_adf)
       unless validation_result[:valid]
-        puts "Warning: Generated ADF may have validation issues:"
+        puts 'Warning: Generated ADF may have validation issues:'
         validation_result[:errors].each { |error| puts "  - #{error}" }
-        puts "Proceeding with ticket creation anyway..."
+        puts 'Proceeding with ticket creation anyway...'
       end
 
       # Build the ticket data structure
@@ -128,9 +127,7 @@ module Jira
       }
 
       # Add optional fields if provided
-      unless parsed[:labels].empty?
-        ticket_data[:fields][:labels] = parsed[:labels]
-      end
+      ticket_data[:fields][:labels] = parsed[:labels] unless parsed[:labels].empty?
 
       # Only add components if not empty and not using placeholder values
       unless parsed[:components].empty? || parsed[:components].join(',').include?('component1')
@@ -148,7 +145,6 @@ module Jira
 
       ticket_data
     end
-
 
     def success_response(ticket_response)
       {

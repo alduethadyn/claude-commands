@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # Add lib directory to load path
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
@@ -10,8 +11,8 @@ require_relative '../lib/jira/ticket_creator'
 # Requires JIRA_ACCESS_TOKEN environment variable to be set
 
 def display_usage
-  puts "Usage: #{$0} <story|task> <template_file>"
-  puts "Example: #{$0} story ticket_description.md"
+  puts "Usage: #{$PROGRAM_NAME} <story|task> <template_file>"
+  puts "Example: #{$PROGRAM_NAME} story ticket_description.md"
   puts ''
   puts 'Arguments:'
   puts '  story|task     - Type of ticket to create'
@@ -47,15 +48,15 @@ end
 
 def display_creation_success(result)
   puts '=' * 80
-  puts "JIRA TICKET CREATED SUCCESSFULLY!"
+  puts 'JIRA TICKET CREATED SUCCESSFULLY!'
   puts '=' * 80
 
   puts "\nTicket Key: #{result[:ticket_key]}"
   puts "Ticket ID: #{result[:ticket_id]}"
   puts "URL: #{result[:url]}"
 
-  puts "\n" + ('=' * 80)
-  puts "Ticket created successfully. You can view it at the URL above."
+  puts "\n#{'=' * 80}"
+  puts 'Ticket created successfully. You can view it at the URL above.'
   puts '=' * 80
 end
 
@@ -68,7 +69,7 @@ end
 issue_type = ARGV[0]
 template_file = ARGV[1]
 
-unless ['story', 'task'].include?(issue_type.downcase)
+unless %w[story task].include?(issue_type.downcase)
   puts "Error: Issue type must be 'story' or 'task'"
   exit 1
 end

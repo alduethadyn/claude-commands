@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require 'net/http'
 require 'json'
@@ -17,9 +18,9 @@ module Jira
         raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set'
       end
 
-      if @jira_email.nil? || @jira_email.empty?
-        raise ArgumentError, 'JIRA_EMAIL environment variable is not set'
-      end
+      return unless @jira_email.nil? || @jira_email.empty?
+
+      raise ArgumentError, 'JIRA_EMAIL environment variable is not set'
     end
 
     def fetch_ticket(ticket_key)
@@ -41,7 +42,7 @@ module Jira
         case response.code
         when '200'
           ticket_data = JSON.parse(response.body)
-          return parse_ticket_info(ticket_data)
+          parse_ticket_info(ticket_data)
         when '401'
           raise StandardError, 'Authentication failed. Please check your JIRA_ACCESS_TOKEN'
         when '403'
@@ -60,7 +61,7 @@ module Jira
 
     def parse_ticket_info(ticket_data)
       fields = ticket_data['fields']
-      
+
       # Extract basic information
       ticket_info = {
         key: ticket_data['key'],
@@ -79,9 +80,7 @@ module Jira
       }
 
       # Add labels if present
-      if fields['labels'] && !fields['labels'].empty?
-        ticket_info[:labels] = fields['labels']
-      end
+      ticket_info[:labels] = fields['labels'] if fields['labels'] && !fields['labels'].empty?
 
       # Add components if present
       if fields['components'] && !fields['components'].empty?
@@ -100,7 +99,7 @@ module Jira
     end
 
     def extract_description_text(description_adf)
-      return "" unless description_adf && description_adf['content']
+      return '' unless description_adf && description_adf['content']
 
       # Simple ADF to text conversion - extracts text content
       text_parts = []
@@ -116,13 +115,9 @@ module Jira
         when 'text'
           text_parts << node['text']
         when 'paragraph', 'heading', 'listItem'
-          if node['content']
-            extract_text_from_adf(node['content'], text_parts)
-          end
+          extract_text_from_adf(node['content'], text_parts) if node['content']
         when 'bulletList', 'orderedList'
-          if node['content']
-            extract_text_from_adf(node['content'], text_parts)
-          end
+          extract_text_from_adf(node['content'], text_parts) if node['content']
         end
       end
     end

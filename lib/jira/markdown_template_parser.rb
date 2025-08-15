@@ -1,19 +1,19 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 module Jira
   # Common module for parsing JIRA ticket markdown templates
   # Used by both TicketCreator and TicketUpdater for consistent parsing
   module MarkdownTemplateParser
-
     # Parse a markdown template and extract all ticket information
     # Returns a hash with metadata and structured content
-    def self.parse_template(content, issue_type = nil)
+    def self.parse_template(content, _issue_type = nil)
       lines = content.split("\n")
 
       # Metadata fields
-      title = ""
-      project_key = "EM" # Default project, can be overridden in template
-      priority = "Medium"
+      title = ''
+      project_key = 'EM' # Default project, can be overridden in template
+      priority = 'Medium'
       labels = []
       components = []
       assignee = nil
@@ -47,56 +47,48 @@ module Jira
             priority = value unless value.nil? || value.include?('|')
           elsif line.start_with?('**Labels:**')
             value = extract_metadata_value(line)
-            if value && !value.include?('label1')
-              labels = value.split(',').map(&:strip)
-            end
+            labels = value.split(',').map(&:strip) if value && !value.include?('label1')
           elsif line.start_with?('**Components:**')
             value = extract_metadata_value(line)
-            if value && !value.include?('component1')
-              components = value.split(',').map(&:strip)
-            end
+            components = value.split(',').map(&:strip) if value && !value.include?('component1')
           elsif line.start_with?('**Assignee:**')
             value = extract_metadata_value(line)
-            if value && !value.include?('user@example.com') && !value.include?('ENV[') && !value.include?('Unassigned')
-              assignee = value
-            else
-              assignee = nil # Default to Unassigned
-            end
+            assignee = if value && !value.include?('user@example.com') && !value.include?('ENV[') && !value.include?('Unassigned')
+                         value
+                       else
+                         nil # Default to Unassigned
+                       end
           elsif line.start_with?('**Parent:**')
             value = extract_metadata_value(line)
-            if value && !value.empty? && !value.include?('PARENT-KEY')
-              parent_issue = value
-            end
+            parent_issue = value if value && !value.empty? && !value.include?('PARENT-KEY')
           elsif line.start_with?('## ')
             in_metadata = false
-            current_section = line[3..-1].strip.downcase
+            current_section = line[3..].strip.downcase
           elsif line.start_with?('### ')
-            current_section = line[4..-1].strip.downcase
+            current_section = line[4..].strip.downcase
+          end
+        elsif line.start_with?('## ')
+          # Handle content sections
+          current_section = line[3..].strip.downcase
+        elsif line.start_with?('### ')
+          # Keep subsection headers in the content
+          case current_section
+          when 'description'
+            description_section << original_line
+          when 'references and notes'
+            references_section << original_line
+          when 'acceptance criteria'
+            acceptance_criteria_section << original_line
           end
         else
-          # Handle content sections
-          if line.start_with?('## ')
-            current_section = line[3..-1].strip.downcase
-          elsif line.start_with?('### ')
-            # Keep subsection headers in the content
-            case current_section
-            when 'description'
-              description_section << original_line
-            when 'references and notes'
-              references_section << original_line
-            when 'acceptance criteria'
-              acceptance_criteria_section << original_line
-            end
-          else
-            # Add content to appropriate section
-            case current_section
-            when 'description'
-              description_section << original_line
-            when 'references and notes'
-              references_section << original_line
-            when 'acceptance criteria'
-              acceptance_criteria_section << original_line
-            end
+          # Add content to appropriate section
+          case current_section
+          when 'description'
+            description_section << original_line
+          when 'references and notes'
+            references_section << original_line
+          when 'acceptance criteria'
+            acceptance_criteria_section << original_line
           end
         end
       end
@@ -123,16 +115,12 @@ module Jira
     def self.build_full_description(description_section, references_section, acceptance_criteria_section)
       sections = []
 
-      unless description_section.empty?
-        sections << description_section.join("\n")
-      end
+      sections << description_section.join("\n") unless description_section.empty?
 
-      unless references_section.empty?
-        sections << "## References and Notes\n\n" + references_section.join("\n")
-      end
+      sections << "## References and Notes\n\n#{references_section.join("\n")}" unless references_section.empty?
 
       unless acceptance_criteria_section.empty?
-        sections << "## Acceptance Criteria\n\n" + acceptance_criteria_section.join("\n")
+        sections << "## Acceptance Criteria\n\n#{acceptance_criteria_section.join("\n")}"
       end
 
       sections.join("\n\n")
@@ -143,12 +131,10 @@ module Jira
       parsed = parse_template(content)
       build_full_description(
         parsed[:description_section],
-        parsed[:references_section], 
+        parsed[:references_section],
         parsed[:acceptance_criteria_section]
       )
     end
-
-    private
 
     # Extract value from metadata line like "**Field:** value"
     def self.extract_metadata_value(line)
@@ -158,9 +144,7 @@ module Jira
       return nil if value.empty?
 
       # Remove markdown formatting
-      value = value.gsub(/^\*\*\s*/, '').gsub(/\s*\*\*$/, '')
-
-      value
+      value.gsub(/^\*\*\s*/, '').gsub(/\s*\*\*$/, '')
     end
   end
 end

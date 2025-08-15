@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # Add lib directory to load path
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
@@ -10,25 +11,25 @@ require_relative '../lib/jira/ticket_updater'
 # Requires JIRA_ACCESS_TOKEN environment variable to be set
 
 def display_usage
-  puts "Usage: #{$0} TICKET-KEY [options]"
-  puts "       #{$0} TICKET-KEY --ready-for-review [assignee]"
-  puts "       #{$0} TICKET-KEY --assignee user@example.com"
-  puts "       #{$0} TICKET-KEY --status 'Ready for Review'"
-  puts "       #{$0} TICKET-KEY --sprint current|SPRINT_ID"
-  puts "       #{$0} TICKET-KEY --description ticket_description.md"
-  puts ""
-  puts "Examples:"
-  puts "  #{$0} EM-1234 --ready-for-review"
-  puts "  #{$0} EM-1234 --ready-for-review me"
-  puts "  #{$0} EM-1234 --ready-for-review john@example.com"
-  puts "  #{$0} EM-1234 --assignee me --status 'In Progress'"
-  puts "  #{$0} EM-1234 --assignee me --status 'In Progress' --sprint current"
-  puts "  #{$0} EM-1234 --sprint 123"
-  puts "  #{$0} EM-1234 --description ticket_description.md"
-  puts ""
-  puts "Environment variables required:"
-  puts "  JIRA_ACCESS_TOKEN - Your Jira API token"
-  puts "  JIRA_EMAIL - Your Jira email address"
+  puts "Usage: #{$PROGRAM_NAME} TICKET-KEY [options]"
+  puts "       #{$PROGRAM_NAME} TICKET-KEY --ready-for-review [assignee]"
+  puts "       #{$PROGRAM_NAME} TICKET-KEY --assignee user@example.com"
+  puts "       #{$PROGRAM_NAME} TICKET-KEY --status 'Ready for Review'"
+  puts "       #{$PROGRAM_NAME} TICKET-KEY --sprint current|SPRINT_ID"
+  puts "       #{$PROGRAM_NAME} TICKET-KEY --description ticket_description.md"
+  puts ''
+  puts 'Examples:'
+  puts "  #{$PROGRAM_NAME} EM-1234 --ready-for-review"
+  puts "  #{$PROGRAM_NAME} EM-1234 --ready-for-review me"
+  puts "  #{$PROGRAM_NAME} EM-1234 --ready-for-review john@example.com"
+  puts "  #{$PROGRAM_NAME} EM-1234 --assignee me --status 'In Progress'"
+  puts "  #{$PROGRAM_NAME} EM-1234 --assignee me --status 'In Progress' --sprint current"
+  puts "  #{$PROGRAM_NAME} EM-1234 --sprint 123"
+  puts "  #{$PROGRAM_NAME} EM-1234 --description ticket_description.md"
+  puts ''
+  puts 'Environment variables required:'
+  puts '  JIRA_ACCESS_TOKEN - Your Jira API token'
+  puts '  JIRA_EMAIL - Your Jira email address'
 end
 
 # Main execution
@@ -45,7 +46,7 @@ begin
   # Parse command line arguments
   if ARGV.include?('--ready-for-review')
     assignee_index = ARGV.index('--ready-for-review') + 1
-    assignee = (assignee_index < ARGV.length) ? ARGV[assignee_index] : nil
+    assignee = assignee_index < ARGV.length ? ARGV[assignee_index] : nil
     result = updater.mark_ready_for_review(ticket_key, assignee)
   else
     options = {}
@@ -75,7 +76,7 @@ begin
     end
 
     if options.empty?
-      puts "No update options specified. Use --help for usage information."
+      puts 'No update options specified. Use --help for usage information.'
       exit 1
     end
 
@@ -85,7 +86,6 @@ begin
   # Display success
   puts result[:message]
   puts "View at: #{result[:url]}"
-
 rescue ArgumentError => e
   puts "Error: #{e.message}"
   exit 1

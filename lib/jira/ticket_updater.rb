@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require 'net/http'
 require 'json'
@@ -53,15 +54,15 @@ module Jira
         # Use the common parser to build the description
         full_description = Jira::MarkdownTemplateParser.parse_for_description(markdown_content)
         description_adf = Jira::MarkdownFormatter.convert_with_fallback(full_description)
-        
+
         # Validate ADF before updating
         validation_result = Jira::ADFValidator.validate_with_details(description_adf)
         unless validation_result[:valid]
-          puts "Warning: Generated ADF may have validation issues:"
+          puts 'Warning: Generated ADF may have validation issues:'
           validation_result[:errors].each { |error| puts "  - #{error}" }
-          puts "Proceeding with update anyway..."
+          puts 'Proceeding with update anyway...'
         end
-        
+
         update_fields[:description] = description_adf
       end
 
@@ -73,7 +74,7 @@ module Jira
             # Sprint field for this Jira instance
             update_fields[:customfield_10009] = sprint_id
           else
-            puts "Warning: No active sprint found"
+            puts 'Warning: No active sprint found'
           end
         else
           update_fields[:customfield_10009] = options[:sprint].to_i
@@ -84,20 +85,14 @@ module Jira
       transition_id = nil
       if options[:status]
         transition_id = get_transition_id(ticket_key, options[:status])
-        unless transition_id
-          raise StandardError, "Unable to transition to status '#{options[:status]}'"
-        end
+        raise StandardError, "Unable to transition to status '#{options[:status]}'" unless transition_id
       end
 
       # Update fields if any
-      unless update_fields.empty?
-        update_ticket_fields(ticket_key, update_fields)
-      end
+      update_ticket_fields(ticket_key, update_fields) unless update_fields.empty?
 
       # Transition status if specified
-      if transition_id
-        transition_ticket(ticket_key, transition_id)
-      end
+      transition_ticket(ticket_key, transition_id) if transition_id
 
       {
         success: true,
@@ -119,7 +114,6 @@ module Jira
     end
 
     private
-
 
     def get_current_active_sprint
       # Get the board ID for the project using hardcoded mapping
@@ -153,19 +147,17 @@ module Jira
           sprints_data = JSON.parse(response.body)
           active_sprints = sprints_data['values'].select { |sprint| sprint['state'] == 'active' }
 
-          if active_sprints.any?
-            return active_sprints.first['id']
-          else
-            puts "No active sprint found for board #{board_id}"
-            return nil
-          end
+          return active_sprints.first['id'] if active_sprints.any?
+
+          puts "No active sprint found for board #{board_id}"
+
         else
           puts "Error getting active sprint: HTTP #{response.code}"
-          return nil
         end
+        nil
       rescue StandardError => e
         puts "Error getting active sprint: #{e.message}"
-        return nil
+        nil
       end
     end
 
@@ -187,14 +179,14 @@ module Jira
         response = http.request(request)
         if response.code == '200'
           user_data = JSON.parse(response.body)
-          return user_data['accountId']
+          user_data['accountId']
         else
           puts "Error getting account ID: HTTP #{response.code}"
-          return nil
+          nil
         end
       rescue StandardError => e
         puts "Error getting account ID: #{e.message}"
-        return nil
+        nil
       end
     end
 
@@ -202,7 +194,7 @@ module Jira
       # This could be implemented to search for users by email
       # For now, return nil to indicate we can't find the account ID
       puts "Warning: Cannot resolve account ID for email #{email}. Use accountId directly instead."
-      return nil
+      nil
     end
 
     def get_board_info_for_project(project_key)
@@ -212,12 +204,10 @@ module Jira
         # Add more project mappings as needed
       }
 
-      if board_mappings.key?(project_key)
-        return board_mappings[project_key]
-      end
+      return board_mappings[project_key] if board_mappings.key?(project_key)
 
       # Fallback to API discovery if not in hardcoded mappings
-      return get_board_for_project_with_type(project_key)
+      get_board_for_project_with_type(project_key)
     end
 
     def get_board_for_project_with_type(project_key)
@@ -240,21 +230,21 @@ module Jira
           boards_data = JSON.parse(response.body)
           if boards_data['values'].any?
             first_board = boards_data['values'].first
-            return {
+            {
               id: first_board['id'],
               type: first_board['type']
             }
           else
             puts "No boards found for project #{project_key}"
-            return nil
+            nil
           end
         else
           puts "Error getting board for project: HTTP #{response.code}"
-          return nil
+          nil
         end
       rescue StandardError => e
         puts "Error getting board for project: #{e.message}"
-        return nil
+        nil
       end
     end
 
@@ -279,7 +269,7 @@ module Jira
         case response.code
         when '204'
           # Success - no content returned
-          return true
+          true
         when '400'
           error_details = JSON.parse(response.body)
           raise StandardError, "Bad request when updating ticket fields: #{JSON.pretty_generate(error_details)}"
@@ -316,17 +306,16 @@ module Jira
           transitions = JSON.parse(response.body)['transitions']
 
           # Find transition by name (case-insensitive)
-          transition = transitions.find do |t| 
+          transition = transitions.find do |t|
             t['to']['name'].downcase == status_name.downcase ||
-            t['name'].downcase == status_name.downcase
+              t['name'].downcase == status_name.downcase
           end
 
-          if transition
-            return transition['id']
-          else
-            available_transitions = transitions.map { |t| "#{t['name']} (to: #{t['to']['name']})" }
-            raise StandardError, "Available transitions: #{available_transitions.join(', ')}"
-          end
+          return transition['id'] if transition
+
+          available_transitions = transitions.map { |t| "#{t['name']} (to: #{t['to']['name']})" }
+          raise StandardError, "Available transitions: #{available_transitions.join(', ')}"
+
         else
           raise StandardError, "Error getting transitions: HTTP #{response.code}"
         end
@@ -359,7 +348,7 @@ module Jira
 
         case response.code
         when '204'
-          return true
+          true
         when '400'
           error_details = JSON.parse(response.body)
           raise StandardError, "Bad request when transitioning ticket: #{JSON.pretty_generate(error_details)}"

@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 module Jira
   # Markdown formatter for JIRA ADF conversion
@@ -7,8 +8,8 @@ module Jira
     # Convert markdown text to ADF using local conversion
     # @param markdown_text [String] The markdown content to convert
     # @return [Hash] ADF document structure
-    def self.convert_markdown_to_adf(markdown_text, **options)
-      return { type: "doc", version: 1, content: [] } if markdown_text.strip.empty?
+    def self.convert_markdown_to_adf(markdown_text, **_options)
+      return { type: 'doc', version: 1, content: [] } if markdown_text.strip.empty?
 
       # Preprocess markdown for better conversion
       processed_markdown = preprocess_markdown(markdown_text)
@@ -32,8 +33,8 @@ module Jira
           current_list_items = []
           in_list = false
 
-          level = $1.length
-          text = $2.strip
+          level = ::Regexp.last_match(1).length
+          text = ::Regexp.last_match(2).strip
           content << create_heading(text, level)
 
         elsif line.match(/^(\s*)\*\s+(.+)$/)
@@ -41,9 +42,9 @@ module Jira
           finalize_paragraph(content, current_paragraph_lines) unless current_paragraph_lines.empty?
           current_paragraph_lines = []
 
-          indent_spaces = $1.length
+          indent_spaces = ::Regexp.last_match(1).length
           indent_level = indent_spaces / 2
-          list_text = $2.strip
+          list_text = ::Regexp.last_match(2).strip
 
           current_list_items << { text: list_text, indent: indent_level }
           in_list = true
@@ -65,7 +66,7 @@ module Jira
       finalize_list(content, current_list_items) unless current_list_items.empty?
 
       {
-        type: "doc",
+        type: 'doc',
         version: 1,
         content: content.compact
       }
@@ -74,12 +75,12 @@ module Jira
     # Primary conversion method (same as convert_markdown_to_adf)
     # @param markdown_text [String] The markdown content to convert
     # @return [Hash] ADF document structure
-    def self.convert_with_fallback(markdown_text, **options)
+    def self.convert_with_fallback(markdown_text, **_options)
       convert_markdown_to_adf(markdown_text)
     end
 
     # Test method for compatibility (always returns true for local conversion)
-    def self.test_connection(**options)
+    def self.test_connection(**_options)
       true
     end
 
@@ -103,8 +104,6 @@ module Jira
         Jira::MarkdownFormatter.convert_markdown_to_adf(markdown_text)
       INSTRUCTIONS
     end
-
-    private
 
     # Preprocess markdown for optimal conversion
     def self.preprocess_markdown(markdown_text)
@@ -143,7 +142,7 @@ module Jira
 
     def self.create_heading(text, level)
       {
-        type: "heading",
+        type: 'heading',
         attrs: { level: [level, 6].min }, # Cap at level 6
         content: parse_inline_text(text)
       }
@@ -151,14 +150,14 @@ module Jira
 
     def self.create_paragraph(text)
       {
-        type: "paragraph",
+        type: 'paragraph',
         content: parse_inline_text(text)
       }
     end
 
     def self.create_nested_bullet_list(items)
       {
-        type: "bulletList",
+        type: 'bulletList',
         content: build_nested_list_structure(items)
       }
     end
@@ -172,34 +171,32 @@ module Jira
         indent = item[:indent] || 0
 
         list_item = {
-          type: "listItem",
+          type: 'listItem',
           content: [
             {
-              type: "paragraph",
+              type: 'paragraph',
               content: parse_inline_text(text)
             }
           ]
         }
 
-        if indent == 0
+        if indent.zero?
           # Top level
           result << list_item
           stack = [{ item: list_item, level: 0 }]
         else
           # Find appropriate parent
-          while stack.length > 0 && stack.last[:level] >= indent
-            stack.pop
-          end
+          stack.pop while stack.length.positive? && stack.last[:level] >= indent
 
-          if stack.length > 0
+          if stack.length.positive?
             parent = stack.last[:item]
 
             # Find or create nested list in parent
-            nested_list = parent[:content].find { |c| c[:type] == "bulletList" }
+            nested_list = parent[:content].find { |c| c[:type] == 'bulletList' }
 
             unless nested_list
               nested_list = {
-                type: "bulletList",
+                type: 'bulletList',
                 content: []
               }
               parent[:content] << nested_list
@@ -222,46 +219,42 @@ module Jira
       content = []
       remaining = text.strip
 
-      while !remaining.empty?
+      until remaining.empty?
         # Handle code spans first `code`
-        if match = remaining.match(/`([^`]+)`/)
+        if (match = remaining.match(/`([^`]+)`/))
           # Add preceding text
-          if match.begin(0) > 0
-            content.concat(parse_text_formatting(remaining[0...match.begin(0)]))
-          end
+          content.concat(parse_text_formatting(remaining[0...match.begin(0)])) if match.begin(0).positive?
 
           # Add code span
           content << {
-            type: "text",
+            type: 'text',
             text: match[1],
-            marks: [{ type: "code" }]
+            marks: [{ type: 'code' }]
           }
 
-          remaining = remaining[match.end(0)..-1]
+          remaining = remaining[match.end(0)..]
 
         # Handle links [text](url)
-        elsif match = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/)
+        elsif (match = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/))
           # Add preceding text
-          if match.begin(0) > 0
-            content.concat(parse_text_formatting(remaining[0...match.begin(0)]))
-          end
+          content.concat(parse_text_formatting(remaining[0...match.begin(0)])) if match.begin(0).positive?
 
           # Add link
           link_text = match[1]
           link_url = match[2]
 
           content << {
-            type: "text",
+            type: 'text',
             text: link_text,
             marks: [
               {
-                type: "link",
+                type: 'link',
                 attrs: { href: link_url }
               }
             ]
           }
 
-          remaining = remaining[match.end(0)..-1]
+          remaining = remaining[match.end(0)..]
 
         else
           # Handle remaining text with formatting
@@ -270,49 +263,45 @@ module Jira
         end
       end
 
-      content.empty? ? [{ type: "text", text: text }] : content
+      content.empty? ? [{ type: 'text', text: text }] : content
     end
 
     def self.parse_text_formatting(text)
       content = []
       remaining = text
 
-      while !remaining.empty?
+      until remaining.empty?
         # Bold text **text**
-        if match = remaining.match(/\*\*([^*]+)\*\*/)
+        if (match = remaining.match(/\*\*([^*]+)\*\*/))
           # Add preceding text
-          if match.begin(0) > 0
-            content << { type: "text", text: remaining[0...match.begin(0)] }
-          end
+          content << { type: 'text', text: remaining[0...match.begin(0)] } if match.begin(0).positive?
 
           # Add bold text
           content << {
-            type: "text",
+            type: 'text',
             text: match[1],
-            marks: [{ type: "strong" }]
+            marks: [{ type: 'strong' }]
           }
 
-          remaining = remaining[match.end(0)..-1]
+          remaining = remaining[match.end(0)..]
 
         # Italic text *text* (not part of **)
-        elsif match = remaining.match(/(?<!\*)\*([^*]+)\*(?!\*)/)
+        elsif (match = remaining.match(/(?<!\*)\*([^*]+)\*(?!\*)/))
           # Add preceding text
-          if match.begin(0) > 0
-            content << { type: "text", text: remaining[0...match.begin(0)] }
-          end
+          content << { type: 'text', text: remaining[0...match.begin(0)] } if match.begin(0).positive?
 
           # Add italic text
           content << {
-            type: "text",
+            type: 'text',
             text: match[1],
-            marks: [{ type: "em" }]
+            marks: [{ type: 'em' }]
           }
 
-          remaining = remaining[match.end(0)..-1]
+          remaining = remaining[match.end(0)..]
 
         else
           # No more formatting, add remaining text
-          content << { type: "text", text: remaining } unless remaining.empty?
+          content << { type: 'text', text: remaining } unless remaining.empty?
           break
         end
       end

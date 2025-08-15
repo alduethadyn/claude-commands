@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # Test runner for Claude JIRA integration tests
 require 'bundler/setup'
