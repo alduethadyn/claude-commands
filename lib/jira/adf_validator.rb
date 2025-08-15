@@ -71,7 +71,7 @@ module Jira
     def self.load_schema
       # Create cache directory if it doesn't exist
       cache_dir = File.dirname(SCHEMA_CACHE_PATH)
-      FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
+      FileUtils.mkdir_p(cache_dir)
 
       # Only download schema if not cached (never expire cached schema)
       download_schema unless File.exist?(SCHEMA_CACHE_PATH)

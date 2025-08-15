@@ -38,18 +38,14 @@ def display_ticket_info(ticket_info)
     puts 'Assignee: Unassigned'
   end
 
-  if ticket_info[:reporter]
-    puts "Reporter: #{ticket_info[:reporter][:display_name]} (#{ticket_info[:reporter][:email]})"
-  end
+  puts "Reporter: #{ticket_info[:reporter][:display_name]} (#{ticket_info[:reporter][:email]})" if ticket_info[:reporter]
 
   puts "Created: #{ticket_info[:created]}"
   puts "Updated: #{ticket_info[:updated]}"
 
   puts "Labels: #{ticket_info[:labels].join(', ')}" if ticket_info[:labels] && !ticket_info[:labels].empty?
 
-  if ticket_info[:components] && !ticket_info[:components].empty?
-    puts "Components: #{ticket_info[:components].join(', ')}"
-  end
+  puts "Components: #{ticket_info[:components].join(', ')}" if ticket_info[:components] && !ticket_info[:components].empty?
 
   puts "Parent: #{ticket_info[:parent][:key]} - #{ticket_info[:parent][:summary]}" if ticket_info[:parent]
 

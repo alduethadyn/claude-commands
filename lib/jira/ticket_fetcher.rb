@@ -10,13 +10,11 @@ module Jira
   # Class to fetch JIRA ticket information
   class TicketFetcher
     def initialize
-      @access_token = ENV['JIRA_ACCESS_TOKEN']
+      @access_token = ENV.fetch('JIRA_ACCESS_TOKEN', nil)
       @jira_email = 'abeckwith@zendesk.com'
       @jira_base_url = 'https://zendesk.atlassian.net'
 
-      if @access_token.nil? || @access_token.empty?
-        raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set'
-      end
+      raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set' if @access_token.nil? || @access_token.empty?
 
       return unless @jira_email.nil? || @jira_email.empty?
 
@@ -114,9 +112,7 @@ module Jira
         case node['type']
         when 'text'
           text_parts << node['text']
-        when 'paragraph', 'heading', 'listItem'
-          extract_text_from_adf(node['content'], text_parts) if node['content']
-        when 'bulletList', 'orderedList'
+        when 'paragraph', 'heading', 'listItem', 'bulletList', 'orderedList'
           extract_text_from_adf(node['content'], text_parts) if node['content']
         end
       end

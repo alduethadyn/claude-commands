@@ -13,13 +13,11 @@ module Jira
   # Class to update JIRA ticket status, assignee, and other fields
   class TicketUpdater
     def initialize
-      @access_token = ENV['JIRA_ACCESS_TOKEN']
+      @access_token = ENV.fetch('JIRA_ACCESS_TOKEN', nil)
       @jira_email = ENV['JIRA_EMAIL'] || 'abeckwith@zendesk.com'
       @jira_base_url = 'https://zendesk.atlassian.net'
 
-      if @access_token.nil? || @access_token.empty?
-        raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set'
-      end
+      raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set' if @access_token.nil? || @access_token.empty?
 
       # @jira_email now has a fallback, so no need to exit if ENV var is not set
       puts "Using JIRA email: #{@jira_email}" if ENV['DEBUG']

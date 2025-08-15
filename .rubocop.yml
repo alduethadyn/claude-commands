@@ -1,0 +1,49 @@
+AllCops:
+  TargetRubyVersion: 3.1
+  NewCops: enable
+
+# Metrics thresholds based on current codebase
+Metrics/AbcSize:
+  Max: 85
+
+Metrics/MethodLength:
+  Max: 85
+
+Metrics/CyclomaticComplexity:
+  Max: 45
+
+Metrics/PerceivedComplexity:
+  Max: 45
+
+Metrics/ClassLength:
+  Max: 270
+
+Metrics/ModuleLength:
+  Max: 115
+
+Metrics/BlockLength:
+  Max: 60
+
+# Layout
+Layout/LineLength:
+  Max: 135
+
+# Security exceptions
+Security/Open:
+  Exclude:
+    - 'lib/jira/adf_validator.rb'
+
+# Style
+Style/EmptyElse:
+  Enabled: false
+
+# Naming
+Naming/PredicateMethod:
+  Enabled: false
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+# JIRA custom field names contain numbers that we can't change
+Naming/VariableNumber:
+  Enabled: false

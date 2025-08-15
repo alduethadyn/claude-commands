@@ -70,18 +70,8 @@ module Jira
         elsif line.start_with?('## ')
           # Handle content sections
           current_section = line[3..].strip.downcase
-        elsif line.start_with?('### ')
-          # Keep subsection headers in the content
-          case current_section
-          when 'description'
-            description_section << original_line
-          when 'references and notes'
-            references_section << original_line
-          when 'acceptance criteria'
-            acceptance_criteria_section << original_line
-          end
-        else
-          # Add content to appropriate section
+        elsif line.start_with?('### ') || !line.start_with?('#')
+          # Handle subsection headers and regular content
           case current_section
           when 'description'
             description_section << original_line
@@ -119,9 +109,7 @@ module Jira
 
       sections << "## References and Notes\n\n#{references_section.join("\n")}" unless references_section.empty?
 
-      unless acceptance_criteria_section.empty?
-        sections << "## Acceptance Criteria\n\n#{acceptance_criteria_section.join("\n")}"
-      end
+      sections << "## Acceptance Criteria\n\n#{acceptance_criteria_section.join("\n")}" unless acceptance_criteria_section.empty?
 
       sections.join("\n\n")
     end

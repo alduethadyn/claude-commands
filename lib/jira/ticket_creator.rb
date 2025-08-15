@@ -13,13 +13,11 @@ module Jira
   # Class to create JIRA tickets (story or task) from markdown templates
   class TicketCreator
     def initialize
-      @access_token = ENV['JIRA_ACCESS_TOKEN']
+      @access_token = ENV.fetch('JIRA_ACCESS_TOKEN', nil)
       @jira_email = ENV['JIRA_EMAIL'] || 'abeckwith@zendesk.com'
       @jira_base_url = 'https://zendesk.atlassian.net'
 
-      if @access_token.nil? || @access_token.empty?
-        raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set'
-      end
+      raise ArgumentError, 'JIRA_ACCESS_TOKEN environment variable is not set' if @access_token.nil? || @access_token.empty?
 
       return unless @jira_email.nil? || @jira_email.empty?
 
@@ -134,14 +132,10 @@ module Jira
         ticket_data[:fields][:components] = parsed[:components].map { |comp| { name: comp } }
       end
 
-      if parsed[:assignee] && !parsed[:assignee].empty?
-        ticket_data[:fields][:assignee] = { emailAddress: parsed[:assignee] }
-      end
+      ticket_data[:fields][:assignee] = { emailAddress: parsed[:assignee] } if parsed[:assignee] && !parsed[:assignee].empty?
 
       # Add parent issue if specified
-      if parsed[:parent_issue] && !parsed[:parent_issue].empty?
-        ticket_data[:fields][:parent] = { key: parsed[:parent_issue] }
-      end
+      ticket_data[:fields][:parent] = { key: parsed[:parent_issue] } if parsed[:parent_issue] && !parsed[:parent_issue].empty?
 
       ticket_data
     end

@@ -19,7 +19,7 @@ module TestHelper
 
   # Clean up temporary files
   def cleanup_temp_files(*paths)
-    paths.each { |path| File.delete(path) if File.exist?(path) }
+    paths.each { |path| FileUtils.rm_f(path) }
   end
 
   # Sample markdown content for testing
