@@ -40,6 +40,12 @@ bundle install
 - JIRA API access configured
 - GitHub CLI (`gh`) installed for PR creation
 
+#### Voice Mode Additional Requirements
+- `expect` - Script runner for interactive sessions
+- `ffmpeg` - Audio recording and processing
+- `whisper` - OpenAI speech recognition model
+- `iTerm` - Terminal application (for focus management)
+
 ### Environment Variables
 Set these environment variables for JIRA integration:
 ```bash
@@ -54,6 +60,18 @@ bundle install
 
 # Run test suite (no API calls)
 bundle exec ruby test/run_tests.rb
+```
+
+#### Voice Mode Setup
+```bash
+# Install voice mode dependencies
+brew install expect ffmpeg openai-whisper
+
+# Alternative: Install Whisper via pip if not using homebrew-supplied python
+pip install openai-whisper
+
+# Launch voice-enabled Claude Code
+~/.claude/bin/claude-code-voice
 ```
 
 ## Usage
@@ -91,6 +109,22 @@ bundle exec ruby test/run_tests.rb
 ```bash
 # Remove a fully rolled out feature flag
 /zendesk_remove_arturo flag_name
+```
+
+### Voice Mode Usage
+```bash
+# Launch voice-enabled Claude Code
+~/.claude/bin/claude-code-voice
+
+# Or use the recommended alias (add to ~/.zshrc):
+alias ccode="~/.claude/bin/claude-code-voice"
+ccode
+
+# In the session:
+# - Use Ctrl+V to trigger voice recording
+# - Speak your command or question  
+# - Text is automatically transcribed and sent to Claude
+# - Configure recording duration and model in the script
 ```
 
 ## Templates

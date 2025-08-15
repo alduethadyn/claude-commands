@@ -1,0 +1,86 @@
+#!/usr/bin/expect -f
+# Voice-enabled Claude Code wrapper
+# Usage: ./claude-code-voice.expect
+
+set timeout -1
+
+# ----- Voice Config -----
+set mic ":1"
+set sr 16000
+set rec "/tmp/claude_voice.wav"
+set model "small"
+set voice_secs 4
+set whisper_device "cpu"
+set whisper_fp16 "False"
+
+# Helper to run a shell command and capture stdout, handle errors
+proc sh {cmd} {
+  if {[catch {exec /bin/zsh -lc $cmd} result]} {
+    # If command failed, check if it's just stderr warnings/messages
+    if {[string match "*WARNING*" $result] || [string match "*UserWarning*" $result] || [string match "*Detected language*" $result]} {
+      # It's just a warning or info message, command probably succeeded
+      return ""
+    } else {
+      # Real error
+      error $result
+    }
+  }
+  return $result
+}
+
+# Helper to focus the terminal window
+proc focus_terminal {} {
+  sh {osascript -e 'tell application "iTerm" to activate'}
+}
+
+# Record & transcribe & return text
+proc capture_transcript {} {
+  upvar mic mic sr sr rec rec model model voice_secs voice_secs whisper_device whisper_device whisper_fp16 whisper_fp16
+
+  if {$voice_secs > 0} {
+    send_user "🎙  Recording for $voice_secs s…\n"
+    sh "ffmpeg -hide_banner -loglevel error -f avfoundation -i \"$mic\" -ar $sr -ac 1 -t $voice_secs -y \"$rec\""
+  } else {
+    send_user "🎙  Recording… press 'q' to stop\n"
+    sh "ffmpeg -hide_banner -loglevel error -f avfoundation -i \"$mic\" -ar $sr -ac 1 -y \"$rec\""
+  }
+
+  send_user "🧠 Transcribing with Whisper ($model)…\n"
+  sh "whisper \"$rec\" --model $model --output_format txt --verbose False --fp16 False"
+
+  # Whisper creates the txt file in current directory with same basename as input
+  set base [file tail [string range $rec 0 [expr {[string length $rec]-5}]]]
+  set txt "${base}.txt"
+  if {![file exists $txt]} { error "No transcription file produced: $txt" }
+
+  set fh [open $txt r]
+  set content [read $fh]
+  close $fh
+  return $content
+}
+
+# Launch Claude Code
+spawn claude code
+
+send_user "\n=== Voice-enabled Claude Code ===\n"
+send_user "Use Ctrl+V to trigger voice recording\n"
+send_user "Everything else works normally\n\n"
+
+# Interactive mode with Ctrl+V for voice
+interact {
+  # Ctrl+V (ASCII 22) triggers voice
+  \026 {
+    send_user "\n🎙  Voice mode activated!\n"
+    set text [capture_transcript]
+    send_user "📝 Transcribed: $text\n"
+    focus_terminal
+    after 500
+    # Send the transcribed text and submit it
+    regsub -all {\r} $text {} text
+    send -- "$text"
+    after 200
+    send "\r"
+    after 200
+    send_user "✅ Text sent and submitted to Claude\n"
+  }
+}
