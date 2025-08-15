@@ -1,23 +1,31 @@
-# Claude JIRA Integration Tools
+# Claude Zendesk Workflow Toolkit
 
-A comprehensive Ruby toolkit for JIRA workflow automation, ticket management, and Atlassian Document Format (ADF) processing.
+A comprehensive Ruby toolkit for Zendesk development workflows, including JIRA integration, feature flag management, and automated development processes.
 
 ## Structure
 
-### JIRA Integration Scripts
+### Core Components
+
+#### JIRA Integration Scripts
 - `create_jira_ticket` - Ruby script to create JIRA tickets from markdown templates
 - `fetch_jira_ticket` - Script to fetch JIRA ticket details  
 - `update_jira_ticket` - Ruby script to update JIRA ticket status, assignee, and sprint assignment
 - `jira_template.md` - Template for creating JIRA tickets
 
+#### Zendesk Workflow Automation
+- Feature flag removal system with codebase analysis
+- Automated pull request creation and testing
+- Branch management and git workflow integration
+
 ### Claude Commands
 
 #### JIRA Commands (`commands/jira/`)
 - `create.md` - Create JIRA tickets (story or task) using guided prompts
-- `implement.md` - Fetch JIRA ticket details and set up development workflow
+- `implement.md` - **Read existing JIRA tickets and implement them** - fetches ticket details, creates branches, and sets up complete development workflow through pull request creation
 
 #### Zendesk Commands (`commands/zendesk/`)  
-- `remove_arturo.md` - Remove fully rolled out Arturo feature flags with JIRA ticket creation
+- `remove_arturo.md` - Remove fully rolled out Arturo feature flags with automated JIRA ticket creation and code cleanup
+- *More Zendesk-specific workflows coming soon*
 
 ## Quick Start
 
@@ -79,17 +87,18 @@ pip install openai-whisper
 ### Creating JIRA Tickets
 ```bash
 # Create a story or task interactively
-/jira_create story
-/jira_create task
+/jira:create story
+/jira:create task
 
 # Create ticket from template file directly
 ./create_jira_ticket story my_ticket.md
 ./create_jira_ticket task my_ticket.md
 ```
 
-### Implementing JIRA Tickets
+### Implementing Existing JIRA Tickets
 ```bash
-# Set up development workflow for a ticket
+# Read existing JIRA ticket and set up complete development workflow
+# (fetches ticket details, creates branch, guides implementation to PR)
 /jira_implement TALK-123
 ```
 
@@ -108,7 +117,7 @@ pip install openai-whisper
 ### Removing Arturo Feature Flags
 ```bash
 # Remove a fully rolled out feature flag
-/zendesk_remove_arturo flag_name
+/zendesk:remove_arturo flag_name
 ```
 
 ### Voice Mode Usage
@@ -137,12 +146,20 @@ The `jira_template.md` provides a standardized format for JIRA tickets including
 
 ## Features
 
-- **Automated Workflow**: Seamless integration between JIRA ticket creation and development setup
-- **Branch Management**: Automatic branch creation and git workflow handling
-- **Template-based**: Consistent ticket formatting using markdown templates
+### JIRA Integration
+- **Ticket Creation**: Create well-formatted JIRA tickets from markdown templates
+- **Implementation Workflow**: Read existing tickets and guide full development process
 - **Smart Updates**: Update ticket status, assignee, and sprint assignment
-- **Feature Flag Cleanup**: Automated removal of rolled-out Arturo feature flags
+- **Template-based**: Consistent ticket formatting using markdown templates
+
+### Zendesk Development Workflows
+- **Feature Flag Cleanup**: Automated removal of rolled-out Arturo feature flags with codebase analysis
+- **Branch Management**: Automatic branch creation and git workflow handling  
 - **PR Integration**: Automatic pull request creation with proper templates
+- **Test Integration**: Automated test running and validation
+
+### Growing Ecosystem
+This toolkit is designed to expand with more Zendesk-specific development workflows, providing a comprehensive automation suite for common development tasks.
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 # Voice-enabled Claude Code wrapper
-# Usage: ./claude-code-voice.expect
+# Usage: ./claude-code-voice
 
 # Set UTF-8 encoding for proper emoji display
 set env(LANG) "en_US.UTF-8"

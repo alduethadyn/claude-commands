@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+
+# Configuration
+SOURCE_DIR = File.expand_path('..', __dir__)
+TARGET_DIR = File.expand_path('~/Code/zendesk/mail_tools/gen_ai/claude/abeckwith')
+
+def main
+  puts "Syncing git-tracked files from #{SOURCE_DIR} to #{TARGET_DIR}"
+
+  # Ensure we're in the source directory
+  Dir.chdir(SOURCE_DIR) do
+    # Get list of git-tracked files
+    git_files = `git ls-files`.strip.split("\n")
+
+    if git_files.empty?
+      puts 'No git-tracked files found'
+      exit 1
+    end
+
+    puts "Found #{git_files.length} git-tracked files to sync"
+
+    # Ensure target directory exists
+    FileUtils.mkdir_p(TARGET_DIR)
+
+    synced_count = 0
+
+    git_files.each do |file|
+      # Skip the sync script itself
+      if file == 'bin/sync_to_zendesk'
+        puts "Skipping: #{file} (sync script)"
+        next
+      end
+
+      source_path = File.join(SOURCE_DIR, file)
+      target_path = File.join(TARGET_DIR, file)
+
+      # Skip if source file doesn't exist (shouldn't happen with git ls-files)
+      unless File.exist?(source_path)
+        puts "Warning: Source file #{source_path} does not exist"
+        next
+      end
+
+      # Create target directory if it doesn't exist
+      target_dir = File.dirname(target_path)
+      FileUtils.mkdir_p(target_dir) unless Dir.exist?(target_dir)
+
+      # Check if file needs updating
+      needs_sync = !File.exist?(target_path) ||
+                   File.mtime(source_path) > File.mtime(target_path) ||
+                   File.size(source_path) != File.size(target_path)
+
+      if needs_sync
+        FileUtils.cp(source_path, target_path, preserve: true)
+        puts "Synced: #{file}"
+        synced_count += 1
+      else
+        puts "Up to date: #{file}"
+      end
+    end
+
+    puts "\nSync complete: #{synced_count} files updated"
+
+    # Show summary
+    if synced_count > 0
+      puts "\nSynced files are now available at:"
+      puts TARGET_DIR
+    else
+      puts "\nAll files were already up to date"
+    end
+  end
+rescue StandardError => e
+  puts "Error during sync: #{e.message}"
+  exit 1
+end
+
+main if __FILE__ == $0
