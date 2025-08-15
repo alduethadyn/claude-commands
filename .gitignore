@@ -31,3 +31,6 @@ Thumbs.db
 # Ignore backup files
 *.bak
 *.backup
+
+# Voice mode transcript files
+claude_voice.txt

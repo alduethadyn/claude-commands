@@ -2,14 +2,20 @@
 # Voice-enabled Claude Code wrapper
 # Usage: ./claude-code-voice.expect
 
+# Set UTF-8 encoding for proper emoji display
+set env(LANG) "en_US.UTF-8"
+set env(LC_ALL) "en_US.UTF-8"
+fconfigure stdout -encoding utf-8
+fconfigure stderr -encoding utf-8
+
 set timeout -1
 
 # ----- Voice Config -----
 set mic ":1"
 set sr 16000
 set rec "/tmp/claude_voice.wav"
-set model "small"
-set voice_secs 4
+set model "tiny"
+set voice_secs 3
 set whisper_device "cpu"
 set whisper_fp16 "False"
 
