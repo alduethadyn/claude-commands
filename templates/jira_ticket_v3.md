@@ -1,10 +1,10 @@
 ## Ticket Title
 
 ### Project Information
-**Project:** EM  
-**Priority:** Medium  
-**Labels:** LABELS_HERE  
-**Parent:** PARENT_KEY  
+**Project:** EM
+**Priority:** Medium
+**Labels:** LABELS_HERE
+**Parent:** PARENT_KEY
 **Assignee:** ASSIGNEE_NAME
 
 ## Description

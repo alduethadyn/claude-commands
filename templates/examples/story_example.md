@@ -1,9 +1,9 @@
 ## User Authentication Enhancement
 
 ### Project Information
-**Project:** EM  
-**Priority:** High  
-**Labels:** security, authentication  
+**Project:** EM
+**Priority:** Low
+**Labels:** security, authentication
 **Assignee:** developer@zendesk.com
 
 ## Description

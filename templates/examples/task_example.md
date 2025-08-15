@@ -1,9 +1,9 @@
 ## Refactor Email Parser Module
 
 ### Project Information
-**Project:** EM  
-**Priority:** Medium  
-**Labels:** refactoring, email-processing, technical-debt  
+**Project:** EM
+**Priority:** Low
+**Labels:** arturo-removal
 **Assignee:** developer@zendesk.com
 
 ## Description
