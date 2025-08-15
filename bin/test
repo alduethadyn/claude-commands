@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+
+# Test runner CLI for Claude JIRA integration  
+exec("bundle", "exec", "ruby", File.expand_path('../test/run_tests.rb', __dir__))

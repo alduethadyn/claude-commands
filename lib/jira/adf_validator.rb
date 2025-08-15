@@ -4,6 +4,8 @@ require 'json'
 require 'json-schema'
 require 'net/http'
 require 'uri'
+require 'fileutils'
+require 'open-uri'
 
 module Jira
   # ADF (Atlassian Document Format) validator using official Atlassian schema
@@ -72,9 +74,8 @@ module Jira
       cache_dir = File.dirname(SCHEMA_CACHE_PATH)
       FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
       
-      # Download schema if not cached or cache is old (>24 hours)
-      if !File.exist?(SCHEMA_CACHE_PATH) || 
-         (Time.now - File.mtime(SCHEMA_CACHE_PATH)) > 86400
+      # Only download schema if not cached (never expire cached schema)
+      if !File.exist?(SCHEMA_CACHE_PATH)
         download_schema
       end
       
@@ -83,21 +84,15 @@ module Jira
     
     # Download ADF schema from Atlassian
     def self.download_schema
-      uri = URI(SCHEMA_URL)
-      response = Net::HTTP.get_response(uri)
+      puts "Downloading ADF schema from #{SCHEMA_URL}..."
       
-      if response.code == '200'
-        File.write(SCHEMA_CACHE_PATH, response.body)
-      else
-        raise "Failed to download ADF schema: #{response.code} #{response.message}"
+      # Use open-uri which handles redirects automatically
+      URI.open(SCHEMA_URL) do |response|
+        File.write(SCHEMA_CACHE_PATH, response.read)
+        puts "ADF schema cached successfully at #{SCHEMA_CACHE_PATH}"
       end
     rescue => e
-      # Fallback: try to use existing cached schema if download fails
-      if File.exist?(SCHEMA_CACHE_PATH)
-        puts "Warning: Failed to update ADF schema, using cached version: #{e.message}"
-      else
-        raise "Failed to download ADF schema and no cached version available: #{e.message}"
-      end
+      raise "Failed to download ADF schema: #{e.message}"
     end
   end
 end

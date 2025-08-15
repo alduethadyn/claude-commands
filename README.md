@@ -1,6 +1,6 @@
-# Claude Commands & Scripts
+# Claude JIRA Integration Tools
 
-A collection of custom Claude commands and utility scripts for development workflow automation.
+A comprehensive Ruby toolkit for JIRA workflow automation, ticket management, and Atlassian Document Format (ADF) processing.
 
 ## Structure
 
@@ -19,10 +19,24 @@ A collection of custom Claude commands and utility scripts for development workf
 #### Zendesk Commands (`commands/zendesk/`)  
 - `remove_arturo.md` - Remove fully rolled out Arturo feature flags with JIRA ticket creation
 
+## Quick Start
+
+```bash
+# Install dependencies
+bundle install
+
+# Run tests
+~/.claude/bin/test
+
+# Validate ADF documents
+~/.claude/bin/validate_adf description.md
+```
+
 ## Setup
 
 ### Prerequisites
-- Ruby installed
+- Ruby 3.4.5 (managed via rbenv)
+- Bundler for dependency management
 - JIRA API access configured
 - GitHub CLI (`gh`) installed for PR creation
 
@@ -31,6 +45,15 @@ Set these environment variables for JIRA integration:
 ```bash
 export JIRA_ACCESS_TOKEN="your_jira_api_token"
 export JIRA_EMAIL="your_email@zendesk.com"
+```
+
+### Development Setup
+```bash
+# Install dependencies
+bundle install
+
+# Run test suite (no API calls)
+bundle exec ruby test/run_tests.rb
 ```
 
 ## Usage
