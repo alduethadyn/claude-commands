@@ -25,6 +25,7 @@ A comprehensive Ruby toolkit for Zendesk development workflows, including JIRA i
 
 #### Zendesk Commands (`commands/zendesk/`)  
 - `remove_arturo.md` - Remove fully rolled out Arturo feature flags with automated JIRA ticket creation and code cleanup
+- `autonomous/remove_arturo.md` - Autonomous feature flag removal with full workflow automation
 - *More Zendesk-specific workflows coming soon*
 
 ## Quick Start
@@ -84,6 +85,40 @@ pip install openai-whisper
 
 ## Usage
 
+### Magic Words for Instant Agent Execution
+
+Claude Code supports "magic words" that trigger instant agent-based execution for maximum efficiency:
+
+#### Primary Triggers
+- **"Build me..."** - Instant agent for feature development
+- **"Fix the..."** - Instant agent for problem resolution  
+- **"Deliver..."** - Instant agent for end-to-end outcomes
+- **"Complete..."** - Instant agent for finishing workflows
+- **"Optimize..."** - Instant agent for improvements
+- **"Remove rolled out arturo feature..."** - Instant agent for feature flag removal
+- **"Remove the disabled arturo feature..."** - Instant agent for feature flag cleanup
+
+#### Context Indicators (Trigger Agent Mode)
+When your request includes these patterns, Claude will automatically use agent mode:
+- Multiple requirements mentioned (priority, components, technical details)
+- End-to-end outcomes described ("from X to Y", "ready for review/deployment")
+- Business objectives stated ("increase performance", "user experience")
+- Timeline implications ("urgent", "high priority", "for next release")
+
+### Autonomous vs Interactive Commands
+
+#### Autonomous Commands (Full Automation)
+- `/jira:autonomous:create` - Create tickets with full context provided
+- `/jira:autonomous:implement` - Implement tickets with clear scope
+- `/jira:autonomous:update` - Update tickets with all requirements specified
+- `/zendesk:autonomous:remove_arturo` - Remove feature flags with status provided
+
+#### Interactive Commands (Guided Workflow)
+- `/jira:create` - Create tickets with guided prompts
+- `/jira:implement` - Implement with exploration of requirements
+- `/jira:update` - Update with guided steps
+- `/zendesk:remove_arturo` - Remove flags with status confirmation
+
 ### Creating JIRA Tickets
 ```bash
 # Create a story or task interactively
@@ -116,8 +151,11 @@ pip install openai-whisper
 
 ### Removing Arturo Feature Flags
 ```bash
-# Remove a fully rolled out feature flag
+# Interactive feature flag removal (guided workflow)
 /zendesk:remove_arturo flag_name
+
+# Autonomous feature flag removal (full automation)
+/zendesk:autonomous:remove_arturo flag_name
 ```
 
 ### Voice Mode Usage
@@ -146,20 +184,28 @@ The `jira_template.md` provides a standardized format for JIRA tickets including
 
 ## Features
 
+### Agent-First Automation
+- **Magic Words**: Instant agent execution with trigger words like "Build me...", "Fix the...", "Remove the disabled arturo feature..."
+- **Context-Aware**: Automatically detects comprehensive context and switches to agent mode for maximum efficiency
+- **Autonomous Commands**: Full automation with `/autonomous:` prefix for experienced users
+- **Interactive Fallback**: Guided workflows when exploration is needed
+
 ### JIRA Integration
 - **Ticket Creation**: Create well-formatted JIRA tickets from markdown templates
 - **Implementation Workflow**: Read existing tickets and guide full development process
 - **Smart Updates**: Update ticket status, assignee, and sprint assignment
 - **Template-based**: Consistent ticket formatting using markdown templates
+- **Dual Modes**: Both autonomous (full automation) and interactive (guided) workflows
 
 ### Zendesk Development Workflows
 - **Feature Flag Cleanup**: Automated removal of rolled-out Arturo feature flags with codebase analysis
 - **Branch Management**: Automatic branch creation and git workflow handling  
 - **PR Integration**: Automatic pull request creation with proper templates
 - **Test Integration**: Automated test running and validation
+- **Context Intelligence**: Automatically determines rollout status and implementation strategy
 
 ### Growing Ecosystem
-This toolkit is designed to expand with more Zendesk-specific development workflows, providing a comprehensive automation suite for common development tasks.
+This toolkit is designed to expand with more Zendesk-specific development workflows, providing a comprehensive automation suite optimized for both agent-driven efficiency and interactive guidance.
 
 ## Contributing
 

@@ -15,7 +15,7 @@ set mic ":1"
 set sr 16000
 set rec "/tmp/claude_voice.wav"
 set model "tiny"
-set voice_secs 3
+set voice_secs 6
 set whisper_device "cpu"
 set whisper_fp16 "False"
 
